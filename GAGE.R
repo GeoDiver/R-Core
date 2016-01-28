@@ -1,6 +1,45 @@
-##Analysis specific to the dengue dataset.
+#!/usr/bin/Rsript
+# ---------------------------------------------------------#
+# Filename      : GAGE.R 								   #
+# Authors       : Marian, Anissa 						   #
+# Description   : Generally Applicable Gene Set 		   # 
+# ---------------------------------------------------------#
 
-#----------------------Parameters to bare in mind-----------------------------
+
+#### TO RUN IN CLI (modify for GAGE) ####
+# Rscript GAGE.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005
+####
+
+
+#############################################################################
+#       Load necessary dependancies, if not previously installed            #
+#############################################################################
+
+# source("http://bioconductor.org/biocLite.R")
+# biocLite("GEOquery")
+# biocLite(c("gage","gageData","GO.db", "pathview" ))
+# install.packages("argparser")
+# install.packages('Cairo')
+# install.packages('GEOquery')
+
+### note: add any packages and sort the libraries alphabetically ###
+
+library('argparser')		# Allows the Rscript to run with CLI arguments
+library('Cairo') 			# Allows storing plots as .png files
+library('gage') 			# Does the analysis
+library('gageData') 		# Lets data be used by gage
+library('GEOquery')			# 
+library('GO.db') 			# Downloads GO datasets
+library('pathview') 		# Visualises interaction networks & used to get ENTREZ IDs
+
+
+#############################################################################
+#                        Command Line Arguments                             #
+#############################################################################
+
+## Currently: Analysis specific to the dengue dataset ##
+
+#----------------------Parameters to bear in mind-----------------------------#
 
 # Function to include the following arguments: 
 # Species= To be fed into bods to get org argument value
@@ -11,45 +50,49 @@
 # paired or unpaired
 
 
+#-----------------------------Parsers----------------------------------------#
 
-#----------------------Loading the data-------------------------------------
+# # set parsers for all input arguments
+# parser <- arg_parser("This parser contains the input arguments")
+# parser <- add_argument(parser, "--accession"    , help="input file")    # GEO Accession ID
+# parser <- add_argument(parser, "--factor"     , help="input file")    # Factor type to be classified by
+# parser <- add_argument(parser, "--popA", nargs='+', help="input file")    # GroupA - all the selected phenotypes (atleast one)
+# parser <- add_argument(parser, "--popB", nargs='+', help="input file")    # GroupB - all the selected phenotypes (atleast one)
+# parser <- add_argument(parser, "--popname1"     , help="input file")    # name for GroupA
+# parser <- add_argument(parser, "--popname2"     , help="input file")    # name for GroupB
+# parser <- add_argument(parser, "--topgenecount"   , help="input file")    # number of top genes to be used
+# parser <- add_argument(parser, "--foldchange"   , help="input file")    # fold change cut off
+# parser <- add_argument(parser, "--thresholdvalue" , help="input file")    # threshold value cut off
+# parser <- add_argument(parser, "--working_dir"    , help="input file")    # GEO Accession ID
+
+# # allow arguments to be run via the command line
+# argv <- parse_args(parser)
+
+# # output directory (CHANGE)
+# output.dir     <- argv$working_dir
 
 
-source("http://bioconductor.org/biocLite.R")
-#biocLite("GEOquery")
-library(GEOquery)
 
+#----------------------Loading the data-------------------------------------#
 
-#Importing data from GEO
+# Importing data from GEO
 gse <- getGEO("GDS5093", GSEMatrix = TRUE)
 
-#Get dataset with expression info
+# Get dataset with expression info
 X <- Table(gse)
 
-#Converting GSE to an expression set object
+# Converting GSE to an expression set object
 eset <- GDS2eSet(gse, do.log2=TRUE)
-
 
 pDat <- pData(eset)
 
 
+#############################################################################
+#                      Using the GAGE package                   	        #
+#############################################################################
 
 
-
-#---------------------------Using the GAGE package------------------------------
-
-
-##Loading gage and associated gene sets
-biocLite(c("gage","gageData","GO.db", "pathview" ))
-library(gage) #Does the analysis
-library(gageData) #Lets data be used by gage
-library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
-library(GO.db) ##Downloads GO datasets
-
-
-
-#------------------------Data Preparation----------------------------------------
-
+#------------------------Data Preparation-----------------------------------#
 
 ##Remove probe ID column & convert into data matrix
 X1<- X
