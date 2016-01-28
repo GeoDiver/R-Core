@@ -1,0 +1,6 @@
+
+# add these lines to the tool_conf.xml file located in the root directory of the Galaxy distribution
+
+<section name="MyTools" id="mTools">
+    <tool file="myTools/toolExample.xml" />
+ </section>
