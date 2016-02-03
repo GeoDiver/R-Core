@@ -84,7 +84,21 @@ kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work with
 save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
 ##Using the gage function to carry out analysis
 #name           <- gage(data    ,  genesets used, control group, experimental group)
-GEOdataset.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, compare= 'unpaired')
+GEOdatasetA.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, same.dir = F, compare = 'unpaired')
+GEOdatasetB.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group1, samp = Group2, same.dir = F, compare = 'unpaired')
+
+GEOdatasetA.kegg.p.sig<-sigGeneSet(GEOdatasetA.kegg.p, outname="GEOdatasetA.kegg")
+GEOdatasetB.kegg.p.sig<-sigGeneSet(GEOdatasetB.kegg.p, outname="GEOdatasetB.kegg")
+
+GEOdatasetA.kegg.2d.sig<-GEOdatasetA.kegg.p.sig[,grep("^stats.GSM", names(GEOdatasetA.kegg.p.sig), value=TRUE)]
+
+heatmap.2(as.matrix(GEOdatasetA.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
+
+GEOdatasetB.kegg.2d.sig<-GEOdatasetB.kegg.p.sig[,grep("^stats.GSM", names(GEOdatasetB.kegg.p.sig), value=TRUE)]
+
+heatmap.2(as.matrix(GEOdatasetB.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
+
+
 
 
 
