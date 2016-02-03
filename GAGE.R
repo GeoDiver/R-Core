@@ -78,6 +78,14 @@ for (a in 1:length(pDat$sample)){
   }
 }
 
+data(kegg.gs)
+kg.hsa=kegg.gsets("hsa") #this picks out the human sets
+kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx] #no idea but doesn't seem to work without this step
+save(kegg.gs, file="kegg.hsa.sigmet.gsets.RData") #saves the human sets as an R object
+##Using the gage function to carry out analysis
+#name           <- gage(data    ,  genesets used, control group, experimental group)
+GEOdataset.kegg.p <- gage(GEOdataset, gsets = kegg.gs, ref = Group2, samp = Group1, compare= 'unpaired')
+
 
 
 #------------------------Data Preparation----------------------------------------
