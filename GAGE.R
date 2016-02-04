@@ -17,13 +17,11 @@
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("GEOquery")
 #biocLite(c("gage","gageData","GO.db", "pathview" ))
-#install.packages("gplots")
 library(GEOquery)
 library(gage) #Does the analysis
 library(gageData) #Lets data be used by gage
 library(pathview) #Visualises interaction networks & used to get ENTREZ IDs
 library(GO.db) #Loads GO database
-library(gplots)
 
 #Importing data from GEO
 gse <- getGEO("GDS5093", GSEMatrix = TRUE)
@@ -234,7 +232,8 @@ GEOdataset.kegg.2d.sig<-sigGeneSet(GEOdataset.kegg.2d.p, outname="GEOdataset.keg
 
 ##Producing the heatmap
 GEOdataset.kegg.2d.sig<-GEOdataset.kegg.2d.sig[,grep("^stats.GSM", names(GEOdataset.kegg.2d.sig), value=TRUE)]
-
+#install.packages("gplots")
+library(gplots)
 heatmap.2(as.matrix(GEOdataset.kegg.2d.sig[1:20,]), dendrogram = "none", key=T, keysize=1.5, main = "Top 20 Enriched Gene Sets", trace="none", density.info="none")
 
 
