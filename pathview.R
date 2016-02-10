@@ -15,8 +15,10 @@ library("pathview")     # Creates Heatmap
 
 # Add parsers
 
-parser <- add_argument(parser, "--gagedata", 
+parser <- add_argument(parser, "--analysis", 
                        help="The GAGE results full path")
+parser <- add_argument(parser, "--GEOdataset",
+                       help= "The GEOdataset used in the GAGE analysis")
 
 parser <- add_argument(parser, "--analysis.type",
                        help="Genesets used and whether or not B should be treated as a control")
@@ -44,7 +46,8 @@ argv <- parse_args(parser)
 
 
 #General parameters
-gagedata   <- argv$gagedata
+analysis   <- argv$analysis
+GEOdataset <- argv$GEOdataset
 analysis.type <- argv$analysis.type
 factor.type <- argv$factor 
 population1     <- unlist(strsplit(argv$popA, ","))
@@ -57,25 +60,21 @@ data <- load(gagedata)
 
 
 
-
-
-
-
-if(analysis.type =="KEGG_ExpVsCtrl"){
-  #Find expression change between experimental group and control
-  GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
-  
-  ########## COMMON ##########
-  sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-  path.ids <- rownames(analysis$greater)[sel]
-  path.ids2 <- substr(path.ids, 1, 8) 
-  ########## COMMON ##########
-  
-  ##Produces  top 3 interaction networks (from 2 way analysis)
-  pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-  
-}
-if(analysis.type =="KEGG_ExpVsExp"){
+if(analysis.type =="ExpVsCtrl"){
+          #Find expression change between experimental group and control
+          GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
+          
+          ########## COMMON ##########
+          sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
+          path.ids <- rownames(analysis$greater)[sel]
+          path.ids2 <- substr(path.ids, 1, 8) 
+          ########## COMMON ##########
+          
+          ##Produces  top 3 interaction networks (from 2 way analysis)
+          pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+          
+    }
+if(analysis.type =="ExpVsExp"){
   
   ########## COMMON ##########
   sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
@@ -90,6 +89,4 @@ if(analysis.type =="KEGG_ExpVsExp"){
   pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pid, species = "hsa"))
   
 }
-
-
 
