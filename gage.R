@@ -281,6 +281,8 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     # Formatting and preparation for heatmap
     analysis.sig<-as.data.frame(analysis.sig)
     analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+    rownames(analysis.stats)<-substr((rownames(analysis.stats)), 1, 8)
+    
     
     ##Interaction networks
     
@@ -346,6 +348,7 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
     # Formatting and preparation for heatmap
     analysis.sig <- as.data.frame(analysis.sig)
     analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+    rownames(analysis.stats)<-substr((rownames(analysis.stats)), 1, 10)
     
     # Results table
     analysis.results<-analysis$greater
