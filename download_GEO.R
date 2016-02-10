@@ -3,15 +3,15 @@
 # Filename      : DGEA.R
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa
 # Description   : Differential Gene Expression Analysis
-# Run           : Rscript DownloadGeo.R --accession GDS5093 --outrdata ~/Desktop/
+# Run           : Rscript download_GEO.R --accession GDS5093 --outrdata ~/Desktop/GDS5093.RData
 # ---------------------------------------------------------
 
 #############################################################################
 #                        Gene Expression  Analysis                          #
 #############################################################################
 
-library("argparser")
-library("GEOquery")
+suppressMessages(library("argparser"))
+suppressMessages(library("GEOquery"))
 
 #############################################################################
 #                        Command Line Arguments                             #

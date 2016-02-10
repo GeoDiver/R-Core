@@ -3,11 +3,11 @@
 # Filename      : DGEA.R
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anissa
 # Description   : Retrieve individual gene expressions and convert to JSON
-# Run           : Rscript Expressions.R  --rundir ~/Desktop/ --geneid LOC100288410
+# Run           : Rscript dgea_expression.R  --rundir ~/Desktop/ --geneid LOC100288410
 # ---------------------------------------------------------------------------
 
-library('argparser')    # Argument passing
-library('jsonlite')     # Convert R object to JSON format
+suppressMessages(library('argparser'))    # Argument passing
+suppressMessages(library('jsonlite'))     # Convert R object to JSON format
 
 #############################################################################
 #                        Command Line Arguments                             #
@@ -27,7 +27,7 @@ argv   <- parse_args(parser)
 #                          Loading Saved Dataset                            #
 #############################################################################
 
-filename <- paste(argv$rundir,"expressionprofile.rData", sep = "")
+filename <- paste(argv$rundir,"dgea_toptable.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
@@ -48,6 +48,6 @@ if((!is.na(argv$rundir))&&(!is.na(X.toptable))){
     index.group2 <- which((expression.info['population']== 'Group2')==TRUE)
     g2 <- list(x = names(X.toptable[argv$geneid, index.group2]),
                    y = as.double(X.toptable[argv$geneid, index.group2]))
-    filename <- paste(argv$rundir,argv$geneid,".json", sep = "")
+    filename <- paste(argv$rundir,'dgea_',argv$geneid,".json", sep = "")
     write(toJSON(list(group1 = g1 ,group2 = g2)), filename)
 }

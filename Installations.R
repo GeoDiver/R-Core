@@ -10,7 +10,7 @@
 #############################################################################
 
 source('http://bioconductor.org/biocLite.R')
-biocLite(c("GEOquery","gage","gageData","GO.db", "pathview","pheatmap","RColorBrewer"))
+biocLite(c("GEOquery","gage","gageData","GO.db", "pathview"))
 install.packages('argparser')
 install.packages('Cairo')
 install.packages('dendextend')
@@ -23,6 +23,5 @@ install.packages('limma')
 install.packages('pheatmap')
 install.packages('plyr')
 install.packages('RColorBrewer')
-install.packages('rjson')
 install.packages('reshape2')
 install.packages('squash')
