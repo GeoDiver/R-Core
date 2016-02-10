@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript GageEdit.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --rundir "~/Desktop/" --dev TRUE
+# Rscript GageEdit.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --rundir "~/Desktop/" --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --dev TRUE
 # ---------------------------------------------------------#
 
 ## Analysis specific to the dengue dataset
@@ -38,7 +38,8 @@ library("gage")         # Does the analysis
 library("gageData")     # Lets data be used by gage
 library("GEOquery")     # GEO dataset Retrieval
 library("GO.db")        # Loads GO database
-library("pathview")     # Visualises interaction networks & used to get ENTREZ IDs
+library("jsonlite")     # Convert R object to JSON format
+library("pathview")     # Interaction networks & used to get ENTREZ IDs
 library("pheatmap")     # Used to create heatmap
 library("RColorBrewer") # Color palette for heatmap
 
@@ -48,22 +49,32 @@ library("RColorBrewer") # Color palette for heatmap
 parser <- arg_parser("This parser contains the input arguments")
 
 # General Paeameters
-parser <- add_argument(parser, "--accession", 
-                       help="Accession Number of the GEO Database")
+parser <- add_argument(parser, "--accession",
+    help = "Accession Number of the GEO Database")
 parser <- add_argument(parser, "--dbrdata",
-                       help = "Downloaded GEO dataset full path")
-parser <- add_argument(parser, "--rundir", 
-                       help="The output directory where graphs get saved")
-parser <- add_argument(parser, "--dev", 
-                       help="The output directory where graphs get saved")
+    help = "Downloaded GEO dataset full path")
+parser <- add_argument(parser, "--rundir",
+    help = "The output directory where graphs get saved")
+parser <- add_argument(parser, "--dev",
+    help = "The output directory where graphs get saved")
 
 # Sample Parameters
 parser <- add_argument(parser, "--popA",
-                       help = "GroupA - all the selected phenotypes (atleast one)", nargs = "+")
+    help = "GroupA - all the selected phenotypes (atleast one)",
+    nargs = "+")
 parser <- add_argument(parser, "--popB",
-                       help = "GroupB - all the selected phenotypes (atleast one)", nargs = "+")
-parser <- add_argument(parser, "--factor", 
-                       help="Factor type to be classified by")
+    help = "GroupB - all the selected phenotypes (atleast one)",
+    nargs = "+")
+parser <- add_argument(parser, "--factor",
+    help = "Factor type to be classified by")
+
+# Sample Parameters
+parser <- add_argument(parser, "--comparisontype", help = "ExpVsCtrl or ExpVsExp")
+parser <- add_argument(parser, "--genesettype",help = "KEGG or GO")
+parser <- add_argument(parser, "--geotype",
+                       help = "BP - Biological Process or 
+                               MF - molecular function 
+                               or CC - Cellular Component")
 
 # allows arguments to be run via the command line
 argv <- parse_args(parser)
@@ -79,23 +90,17 @@ isdebug         <- argv$dev
 
 # Sample Parameters
 accession   <- argv$accession
-factor.type <- argv$factor 
+factor.type <- argv$factor
 population1     <- unlist(strsplit(argv$popA, ","))
 population2     <- unlist(strsplit(argv$popB, ","))
 
-pop.colour1 <- "#b71c1c"      
-pop.colour2 <- "#0d47a1" 
+pop.colour1 <- "#b71c1c"
+pop.colour2 <- "#0d47a1"
 
-# ---------------------- TESTING VARIABLES -------------------------
-
-# dbrdata     <- "/Users/sureshhewapathirana/Desktop/GDS5093.rData"
-# rundir      <- "/Users/sureshhewapathirana/Desktop/"
-# accession   <- "GDS5093"
-# factor.type <- "infection"
-# 
-# population1     <- c("Dengue virus")
-# population2     <- c("control")
-# isdebug <- TRUE
+# Gage parameters
+comparison.type <- argv$comparisontype  # "ExpVsCtrl"  # or ExpVsExp
+geneset.type    <- argv$genesettype     # "KEGG"  # or "GO"
+geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
 
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
@@ -115,7 +120,7 @@ if (file.exists(dbrdata)){
     eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
-if(isdebug ){print("INFO : Data Loading completed!")}
+if( isdebug ) { print("INFO : Data Loading completed!") }
 
 # Get dataset with expression info
 Y           <- Table(gse)
@@ -179,11 +184,7 @@ id.map.refseq <- id2eg(ids = Y$IDENTIFIER, category = "SYMBOL", org = keggcode.o
 #data(bods) - contains values  for 'org' argument. 
 
 ## Replace gene symbols with ENTREZ ID in dataset matrix
-for (i in 1:length(id.map.refseq[,1])){
-    if (id.map.refseq[i,1] == Y1_matrix[i,1]){
-        Y1_matrix[i,1]<-id.map.refseq[i,2]
-    }
-}
+Y1_matrix[,1]<-id.map.refseq[,2]
 
 ## Remove rows without ENTREZ IDs
 Y1_matrix<-Y1_matrix[complete.cases(Y1_matrix),]
@@ -203,24 +204,25 @@ if(isdebug ){print("INFO : Data Preparation completed!")}
 
 # Loading kegg sets
 data(kegg.gs)
-kg.hsa=kegg.gsets(organism)                       #this picks out the human sets
-kegg.gs=kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
+kg.hsa  = kegg.gsets(organism)                       #this picks out the human sets
+kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
 filename <- paste(rundir, "kegg.hsa.sigmet.gsets.RData", sep="")
 save(kegg.gs, file = filename) #saves the human sets as an R object
 
 # Loading GO sets
-go.hs=go.gsets(species="human")       # use species column of bods2
-go.bp=go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
-go.mf=go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
-go.cc=go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
+go.hs = go.gsets(species="human")       # use species column of bods2
+go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
+go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
+go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
 filename <- paste(rundir, "go.hs.gsets.RData", sep="")
-save(go.bp, go.mf, go.cc, file= filename)
+save(go.bp, go.mf, go.cc, file = filename)
 
 if(isdebug ){print("INFO : Gage Data Preparation completed!")}
 
 #############################################################################
 #               Heatmap                  #
 #############################################################################
+
 get.heatmap <- function(analysis.stats, heatmap.name){
     
     analysis.heatmap<-t(analysis.stats)
@@ -239,8 +241,8 @@ get.heatmap <- function(analysis.stats, heatmap.name){
                        color = col.pal, 
                        fontsize = 6.5,
                        fontsize_row=6, 
-                       fontsize_col = 6,
-                       gaps_col=length(Group1))
+                       fontsize_col = 6
+                       )
     dev.off()
 
 }
@@ -248,21 +250,12 @@ get.heatmap <- function(analysis.stats, heatmap.name){
 #               GAGE analysis for KEGG                  #
 #############################################################################
 
-kegg.analysis <- function(set.type , analysis.type){
+kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2, samp.group = G1, compare.option = "paired"){
+   
+    analysis <- gage(GEOdataset, gsets = kegg.gs,  #set.type, 
+                         ref = G2, samp = G1, 
+                         same.dir = F, compare = "unpaired" )
     
-    if(analysis.type =="KEGG_ExpVsCtrl"){
-        
-        # Using the gage function to carry out two-way analysis
-        analysis <- gage(GEOdataset, gsets = set.type, 
-                         ref = Group2, samp = Group1, 
-                         same.dir = F, compare='unpaired')
-        filename <- "kegg1.svg"
-    }
-    if(analysis.type =="KEGG_ExpVsExp"){
-        analysis <- gage(GEOdataset, gsets= kegg.gs, 
-                         ref=NULL , samp=NULL, same.dir = F)
-        filename <- "kegg2.svg"
-    }
     # Returns number of two-direction significantly enriched gene sets
     analysis.sig<-sigGeneSet(analysis)
     
@@ -272,51 +265,49 @@ kegg.analysis <- function(set.type , analysis.type){
     
     ##Interaction networks
     
-    if(analysis.type =="KEGG_ExpVsCtrl"){
-        #Find expression change between experimental group and control
-        GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
-        
-        ########## COMMON ##########
-        sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-        path.ids <- rownames(analysis$greater)[sel]
-        path.ids2 <- substr(path.ids, 1, 8) 
-        ########## COMMON ##########
-        
-        ##Produces  top 3 interaction networks (from 2 way analysis)
-        pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-        
-    }
-    if(analysis.type =="KEGG_ExpVsExp"){
-        
-        ########## COMMON ##########
-        sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-        path.ids <- rownames(analysis$greater)[sel]
-        path.ids2 <- substr(path.ids, 1, 8) 
-        ########## COMMON ##########
-        
-        ##Interaction pathways for experimental group 1
-        pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pid, species = "hsa"))
-        
-        ##Interaction pathways for experimental group 2
-        pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pid, species = "hsa"))
-        
-    }
+#    if(analysis.type =="ExpVsCtrl"){
+#        #Find expression change between experimental group and control
+#        GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
+#        
+#        ########## COMMON ##########
+#        sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
+#        path.ids <- rownames(analysis$greater)[sel]
+#        path.ids2 <- substr(path.ids, 1, 8) 
+#        ########## COMMON ##########
+#        
+#        ##Produces  top 3 interaction networks (from 2 way analysis)
+#        pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
+#        
+#    }
+#    if(analysis.type =="ExpVsExp"){
+#        
+#        ########## COMMON ##########
+#        sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
+#        path.ids <- rownames(analysis$greater)[sel]
+#        path.ids2 <- substr(path.ids, 1, 8) 
+#        ########## COMMON ##########
+#        
+#        ##Interaction pathways for experimental group 1
+#        pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pid, species = "hsa"))
+#        
+#        ##Interaction pathways for experimental group 2
+#        pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pid, species = "hsa"))
+#        
+#    }
     
-    
-    ##Results table
+    # Results table
     analysis.results<-analysis$greater
     
-    ##Remove gene sets without zero enrichments
+    # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
-    ##Creating a heatmap
-    get.heatmap(analysis.stats, filename)
+    # save "Toptable"
+    filename <- paste(rundir, "gagedata.json", sep = "")
+    write(toJSON(analysis.results, digits=I(4)), filename )
+    
+    # Creating a heatmap
+    get.heatmap(analysis.stats, "heatmap.svg")
 }
-
-kegg.analysis(kegg.gs, "KEGG_ExpVsCtrl")
-if(isdebug ){print("INFO : KEGG_ExpVsCtrl completed!")}
-kegg.analysis(kegg.gs, "KEGG_ExpVsExp")
-if(isdebug ){print("INFO : KEGG_ExpVsExp completed!")}
 
 #############################################################################
 #          GAGE analysis for Gene ontology sets                             #
@@ -324,20 +315,12 @@ if(isdebug ){print("INFO : KEGG_ExpVsExp completed!")}
 
 #arguments: go.cc, go.mf, go.bp
 
-go.analysis <- function(set.type , analysis.type){
-    
-    # Using the gage function to carry out two-way analysis
-    if(analysis.type =="GO_ExpVsCtrl"){
+go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, compare.option = "paired" ){
+  
         analysis <- gage(GEOdataset, gsets = set.type, 
-                                    ref = Group2, samp = Group1, 
-                                    same.dir = F, compare='unpaired')
-        filename <- "heatmapgo1.svg"
-        
-    }else if(analysis.type == "GO_ExpVsExp"){
-        analysis <- gage(GEOdataset, gsets= set.type, 
-                                    ref=NULL , samp=NULL, same.dir = F)
-        filename <- "heatmapgo2.svg"
-    }
+                                    ref = ref.group, samp = samp.group, 
+                                    same.dir = F, compare= compare.option)
+     
     # Returns number of two-direction significantly enriched gene sets
     analysis.sig<-sigGeneSet(analysis)
     
@@ -351,14 +334,40 @@ go.analysis <- function(set.type , analysis.type){
     # Remove gene sets without zero enrichments
     analysis.results<-analysis.results[complete.cases(analysis.results),]
     
+    # save "Toptable"
+    filename <- paste(rundir, "gagedata.json", sep = "")
+    write(toJSON(analysis.results, digits=I(4)), "filename" )
+    
     # Creating a heatmap
-    get.heatmap(analysis.stats, filename)
+    get.heatmap(analysis.stats, "heatmap.svg")
 }
 
-#go.analysis(go.hs, "GO_ExpVsCtrl")
-#if(isdebug ){print("INFO : GO_ExpVsCtrl completed!")}
-#go.analysis(go.hs, "GO_ExpVsExp")
-#if(isdebug ){print("INFO : GO_ExpVsExp completed!")}
+#############################################################################
+#                        Function Calling                                   #
+#############################################################################
 
+comp.option <- ifelse(comparison.type =="ExpVsCtrl", "unpaired", "paired")
+if(comparison.type =="ExpVsCtrl"){
+    G2 <- Group2
+    G1 <- Group1
+}else{
+    G2 <- NULL
+    G1 <- NULL
+}
 
+if(geneset.type == "KEGG"){
+    kegg.analysis(kegg.gs, comparison.type, G2, G1, comp.option)
+    if(isdebug ){print("INFO : KEGG Analysis completed!")}
+}
+if(geneset.type == "GO"){
+    if(geo.type == "BP"){
+        go.analysis(go.bp, comparison.type, G2, G1,comp.option)
+    }else if(geo.type == "MF"){
+        go.analysis(go.mf, comparison.type, G2, G1,comp.option)
+    }else if(geo.type == "CC"){
+        go.analysis(go.cc, comparison.type, G2, G1,comp.option)
+    }
+    
+    if(isdebug ){print("INFO : GO Analysis completed!")}
+}
 

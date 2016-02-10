@@ -3,38 +3,28 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr
+# Rscript DGEA.R --accession GDS5093 --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --heatmaprows 100 --dendrow TRUE --dendcol TRUE --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --adjmethod fdr --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
 #                        Import Libraries                                   #
 #############################################################################
 
-# silent library loading messages on command line
-suppressMessages(library("limma"))
-suppressMessages(library("gplots"))
-suppressMessages(library("GEOquery"))
-suppressMessages(library("pheatmap"))
-suppressMessages(library("plyr"))
-suppressMessages(library("DMwR"))
-suppressMessages(library("dendextend"))
-suppressMessages(library("squash"))
-
-# load required libraries
-library("argparser")    # Argument passing
-library("Cairo")        # Plots saving
-library("dendextend")   # Dendogram extended functionalities
-library("DMwR")         # Outlier Prediction for clustering
-library("GEOquery")     # GEO dataset Retrieval
-library("ggplot2")      # Graphs designing
-library("gplots")       # Graphs designing
-library("jsonlite")     # Convert R object to JSON format
-library("pheatmap")     # Heatmap Generating
-library("limma")        # Differencial Gene Expression Analysis
-library("plyr")         # Splitting, Applying and Combining Data
-library("RColorBrewer") # Import Colour Pallete
-library("reshape2")     # Prepare dataset for ggplot
-library("squash")       # Clustering Dendogram
+# load required libraries and silence library loading messages on command line
+suppressMessages(library("argparser"))     # Argument passing
+suppressMessages(library("Cairo"))         # Plots saving
+suppressMessages(library("dendextend"))    # Dendogram extended functionalities
+suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
+suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
+suppressMessages(library("ggplot2"))       # Graphs designing
+suppressMessages(library("gplots"))        # Graphs designing
+suppressMessages(library("jsonlite"))      # Convert R object to JSON format
+suppressMessages(library("pheatmap"))      # Heatmap Generating
+suppressMessages(library("limma"))         # Differencial Gene Expression Analysis
+suppressMessages(library("plyr"))          # Splitting, Applying and Combining Data
+suppressMessages(library("RColorBrewer"))  # Import Colour Pallete
+suppressMessages(library("reshape2"))      # Prepare dataset for ggplot
+suppressMessages(library("squash"))        # Clustering Dendogram
 
 
 #############################################################################
@@ -53,6 +43,8 @@ parser <- add_argument(parser, "--analyse",
     help = "List of analysis to be performed", nargs = "+")
 parser <- add_argument(parser, "--geodbpath",
     help  =  "GEO Dataset full path")
+parser <- add_argument(parser, "--dev", 
+                       help="The output directory where graphs get saved")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession",
@@ -100,9 +92,15 @@ argv   <- parse_args(parser)
 #############################################################################
 
 # General Parameters
-run.dir      <- argv$rundir
+run.dir         <- argv$rundir
 dbrdata         <- argv$dbrdata
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
+
+if(!is.na(argv$dev)){
+	isdebug     <- argv$dev
+} else {
+	isdebug     <- FALSE
+}
 
 # Sample Parameters
 factor.type     <- argv$factor
@@ -146,12 +144,21 @@ if (argv$clustering %in%
 
 # Heatmap
 heatmap.rows <- as.numeric(argv$heatmaprows)
-dendrow <- as.logical(argv$dendrow)
-dendcol <- as.logical(argv$dendcol)
+dendrow      <- as.logical(argv$dendrow)
+dendcol      <- as.logical(argv$dendcol)
 
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
+
+if(isdebug){
+	print("GeoDiver is starting")
+}
+
+if(isdebug){
+	print("Libraries have been loaded")
+}
+
 
 if (file.exists(dbrdata)){
     load(file = dbrdata)
@@ -181,6 +188,24 @@ if (logc == TRUE) {
     exprs(eset) <- log2(X)
 }
 
+
+if(isdebug){
+	print("Datset has been loaded")
+}
+
+if(isdebug){
+	print(paste("Analyzing the factor", factor.type))
+}
+
+if(isdebug){
+	print(paste("for", pop.name1,":", argv$popA)) 
+}
+
+if(isdebug){
+	print(paste("against", pop.name2,":", argv$popB))
+}
+
+
 #############################################################################
 #                       Factor Selection                                    #
 #############################################################################
@@ -193,6 +218,7 @@ rownames(X)     <- gene.names
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
+
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -231,6 +257,8 @@ data <- within(melt(X), {
 newpclass           <- expression.info$population
 names(newpclass)    <- expression.info$Sample
 
+if(isdebug){print("Factors and Populations have been set")}
+
 #############################################################################
 #                        Top Table                                          #
 #############################################################################
@@ -258,7 +286,9 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
                          number = topgene.count)
 
     return(toptable)
+	
 }
+
 
 #############################################################################
 #                        Graphical Representations                          #
@@ -275,6 +305,10 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
     
     filename <- paste(path, "boxplot.png", sep = "")
     ggsave(filename, plot = boxplot, width = 8, height = 4)
+
+	if(isdebug){
+		print("Boxplot has been produced")
+	}
 }
 
 # Calculate Outliers Probabilities/ Dissimilarities
@@ -288,6 +322,8 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
                                       alg  = "hclust",
                                       meth = clust.method))
     return(o$prob.outliers)
+
+	if(isdebug){print("Outliers have been identified")}
 }
 
 # Heatmap
@@ -334,7 +370,21 @@ heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.c
              fontsize_col   = 3.5,
              gaps_col       = column.gap)
     dev.off()
+
+	if(isdebug){
+		print(paste("Heatmap has been created"))	      
+	}
+
+	if(isdebug){
+		if(dendrow==TRUE) {
+			print("with a dendogram for rows")
+		}
+		if(dendcol==TRUE){
+		    print("and a dendogram for columns")
+		}
+	}
 }
+
 
 #Clustering dendogram
 clustering <- function(X, dist.method = "euclidean", clust.method = "average", exp){
@@ -383,8 +433,12 @@ clustering <- function(X, dist.method = "euclidean", clust.method = "average", e
         vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
         
         dev.off()
-}
 
+	if(isdebug){
+		print(paste("Clustering has been performed",
+		      "with distance method:", argv$distance, "and clustering method:", argv$clustering))
+	}
+}
 
 # Apply Bonferroni cut-off as the default thresold value
 volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), path){
@@ -401,7 +455,14 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
     # File saving
     filename <- paste(path, "volcano.png", sep = "")
     ggsave(filename, plot = vol, height = 6, width = 6)
+
+	if(isdebug){
+		print(paste("Volcanoplot has been produced", 
+		      "for a foldchange of:", fold.change, "and threshold of:", threshold.value))
+	}
 }
+
+
 
 get.volcanodata <- function(toptable){
 
@@ -447,6 +508,9 @@ get.pcplotdata <- function(Xpca, populations){
     names(Xscores) <- cols
 
    return(unlist(Xscores, recursive = FALSE))
+
+   if(isdebug){print("PCA has been calculated")}
+
 }
 
 #############################################################################
@@ -473,6 +537,16 @@ save(X.toptable, expression.info, file = filename)
 # save tab delimited
 filename <- paste(run.dir,"toptable.tsv", sep = "")
 write.table(toptable, filename, col.names=NA, sep = "\t" )
+
+if(isdebug){
+	print(paste("TopTable has been produced", 
+	      "for", topgene.count, "genes with the cut-off method:", adj.method))
+}
+
+
+if(isdebug){
+	print(paste("Analysis to be performed:", argv$analyse))
+}
 
 if ("Boxplot" %in% analysis.list){
     samples.boxplot(data, c(pop.colour1, pop.colour2),

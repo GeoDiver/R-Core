@@ -49,5 +49,5 @@ if((!is.na(argv$rundir))&&(!is.na(X.toptable))){
     g2 <- list(x = names(X.toptable[argv$geneid, index.group2]),
                    y = as.double(X.toptable[argv$geneid, index.group2]))
     filename <- paste(argv$rundir,argv$geneid,".json", sep = "")
-    write(toJSON(list(list(group1 = g1 ,group2 = g2))), filename)
+    write(toJSON(list(group1 = g1 ,group2 = g2)), filename)
 }
