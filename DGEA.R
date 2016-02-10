@@ -470,6 +470,9 @@ X.toptable <- X[as.numeric(rownames(toptable)), ]
 filename <- paste(run.dir,"expressionprofile.rData", sep = "")
 save(X.toptable, expression.info, file = filename)
 
+# save tab delimited
+filename <- paste(run.dir,"toptable.tsv", sep = "")
+write.table(toptable, filename, col.names=NA, sep = "\t" )
 
 if ("Boxplot" %in% analysis.list){
     samples.boxplot(data, c(pop.colour1, pop.colour2),
