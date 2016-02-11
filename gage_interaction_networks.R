@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript interaction_networks.R --dbrdata ~/Desktop/kegg.RData --rundir ~/Desktop/ --pathid "hsa00480"
+# Rscript gage_interaction_networks.R --dbrdata ~/Desktop/kegg.RData --rundir ~/Desktop/ --pathid "hsa00480"
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -18,7 +18,6 @@ suppressMessages(library("gageData"))      # Lets data be used by gage
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("GO.db"))         # Loads GO database
 suppressMessages(library("pathview"))      # Interaction networks & used to get ENTREZ IDs
-suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
 
 #-------------------------------Set parsers---------------------------------------
 
@@ -45,15 +44,12 @@ argv <- parse_args(parser)
 rundir          <- argv$rundir
 dbrdata         <- argv$dbrdata
 pathid          <- argv$pathid
-#pathid          <- "hsa00480"
 
 #############################################################################
 #                          Loading Saved Dataset                            #
 #############################################################################
 
-filename <- paste(argv$rundir,"kegg.RData", sep = "")
-#filename <- "/Users/sureshhewapathirana/Desktop/kegg.RData"
-
+filename <- paste(rundir,"kegg.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
