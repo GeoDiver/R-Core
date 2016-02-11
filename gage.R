@@ -287,39 +287,7 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
     pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
     rownames(analysis.stats) <- pathway.id 
-    
-#     #Interaction networks
-#     
-#        if(analysis.type =="ExpVsCtrl"){
-#            #Find expression change between experimental group and control
-#            GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
-#            
-#            ########## COMMON ##########
-#            sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-#            path.ids <- rownames(analysis$greater)[sel]
-#            path.ids2 <- substr(path.ids, 1, 8) 
-#            ########## COMMON ##########
-#            
-#            ##Produces  top 3 interaction networks (from 2 way analysis)
-#            pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-#            
-#        }
-#        if(analysis.type =="ExpVsExp"){
-#            
-#            ########## COMMON ##########
-#            sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-#            path.ids <- rownames(analysis$greater)[sel]
-#            path.ids2 <- substr(path.ids, 1, 8) 
-#            ########## COMMON ##########
-#            
-#            ##Interaction pathways for experimental group 1
-#            pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pid, species = "hsa"))
-#            
-#            ##Interaction pathways for experimental group 2
-#            pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pid, species = "hsa"))
-#            
-#        }
-#     
+
     # Results table
     analysis.results<-analysis$greater
     
