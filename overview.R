@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --distance "euclidean" --clustering "average" --dev TRUE
+# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Clustering" --distance "euclidean" --clustering "average" --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -242,6 +242,7 @@ get.pcdata <- function(Xpca){
 get.pcplotdata <- function(Xpca, populations){
   Xscores <- Xpca$x
 
+  sample.names <- rownames(Xscores)
   rownames(Xscores) <- NULL
   cols <- colnames(Xscores)
 
@@ -249,9 +250,12 @@ get.pcplotdata <- function(Xpca, populations){
   Xscores <- lapply(1:nrow(Xscores),
                     function(y) split(Xscores[, y], populations))
   names(Xscores) <- cols
-
+  
+  pc <- unlist(Xscores, recursive = FALSE)
+  complete.data <- c(split(sample.names, populations),pc)
+    
   if (isdebug) { print("PCA has been calculated") }
-  return(unlist(Xscores, recursive = FALSE))
+  return(complete.data)
 }
 
 
