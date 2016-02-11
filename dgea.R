@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript dgea.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.3 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
+# Rscript dgea.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -72,6 +72,8 @@ parser <- add_argument(parser, "--dendrow",
                        help = "Boolean value for display dendogram for Genes")
 parser <- add_argument(parser, "--dendcol",
                        help = "Boolean value for display dendogram for Samples")
+parser <- add_argument(parser, "--clusterby",
+                       help = "Cluster by complete dataset or toptable")
 # Clustering
 parser <- add_argument(parser, "--distance",
                        help = "Distance measurement methods")
@@ -120,6 +122,7 @@ if (argv$adjmethod %in% adjmethod_options) {
 heatmap.rows <- as.numeric(argv$heatmaprows)
 dendrow      <- as.logical(argv$dendrow)
 dendcol      <- as.logical(argv$dendcol)
+cluster.by   <- argv$clusterby
 
 # Clustering
 distance_options <- c("euclidean", "maximum", "manhattan", "canberra",
@@ -198,17 +201,26 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
   return(toptable)
 }
 
+get.dendogram <- function(){
+    
+}
+
 # Heatmap
-heatmap <- function(X.matix, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
+heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
                     dist.method, clust.method, path){
 
   col.pal <- colorRampPalette(rev(RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
 
   # Column dendogram
   if (dendogram.col == TRUE){
-    hc <- hclust(dist(t(X.matix), method = dist.method), method = clust.method)
-
-    outliers <- outlier.probability(X.matix, dist.method, clust.method)
+      if(cluster.by == "Complete"){
+            hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
+            outliers <- outlier.probability(X, dist.method, clust.method)
+      }else{
+            hc <- hclust(dist(t(X.matix), method = dist.method), method = clust.method)
+            outliers <- outlier.probability(X.matix, dist.method, clust.method)
+      }
+    
 
     ann.col <- data.frame(Population    = exp[, "population"],
                           Factor        = exp[, "factor.type"],
@@ -399,8 +411,10 @@ if ("Volcano" %in% analysis.list){
 }
 
 if ("Heatmap" %in% analysis.list){
-    heatmap(X.toptable, expression.info, heatmap.rows = heatmap.rows,
+    
+    heatmap(X.toptable,X, expression.info, heatmap.rows = heatmap.rows,
             dendrow, dendcol, dist.method, clust.method, run.dir)
+  
 }
 
 if (length(json.list) != 0){
