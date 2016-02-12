@@ -3,7 +3,8 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript gage.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.RData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --dev TRUE
+# Rscript gage.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.RData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
+# Rscript gage.R --accession GDS5092 --dbrdata ~/Desktop/GDS5092.RData --rundir ~/Desktop/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
 # ---------------------------------------------------------#
 
 ## Analysis specific to the dengue dataset
@@ -25,6 +26,7 @@
 # load required libraries and silence library loading messages on command line
 suppressMessages(library("argparser"))     # Argument passing
 suppressMessages(library("Cairo"))         # Plots saving
+suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
 suppressMessages(library("gage"))          # Does the analysis
 suppressMessages(library("gageData"))      # Lets data be used by gage
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
@@ -59,13 +61,29 @@ parser <- add_argument(parser, "--popB",
 parser <- add_argument(parser, "--factor",
     help = "Factor type to be classified by")
 
-# Sample Parameters
+# Gage Parameters
 parser <- add_argument(parser, "--comparisontype", help = "ExpVsCtrl or ExpVsExp")
 parser <- add_argument(parser, "--genesettype", help = "KEGG or GO")
 parser <- add_argument(parser, "--geotype",
                        help = "BP - Biological Process or
                                MF - molecular function
                                or CC - Cellular Component")
+
+# Heatmap
+parser <- add_argument(parser, "--heatmaprows",
+                       help = "Number of genes show in the heatmap")
+parser <- add_argument(parser, "--dendrow",
+                       help = "Boolean value for display dendogram for Genes")
+parser <- add_argument(parser, "--dendcol",
+                       help = "Boolean value for display dendogram for Samples")
+parser <- add_argument(parser, "--clusterby",
+                       help = "Cluster by complete dataset or toptable")
+# Clustering
+parser <- add_argument(parser, "--distance",
+                       help = "Distance measurement methods")
+parser <- add_argument(parser, "--clustering",
+                       help = "HCA clustering methods")
+
 
 # allows arguments to be run via the command line
 argv <- parse_args(parser)
@@ -77,12 +95,7 @@ argv <- parse_args(parser)
 # General Parameters
 rundir          <- argv$rundir
 dbrdata         <- argv$dbrdata
-
-if(!is.na(argv$dev)){
-	isdebug     <- argv$dev
-} else {
-	isdebug     <- FALSE
-}
+isdebug         <- ifelse(!is.na(argv$dev), argv$dev, FALSE)
 
 # Sample Parameters
 accession   <- argv$accession
@@ -92,6 +105,29 @@ population2 <- unlist(strsplit(argv$popB, ","))
 
 pop.colour1 <- "#b71c1c"
 pop.colour2 <- "#0d47a1"
+
+# Heatmap
+heatmap.rows <- as.numeric(argv$heatmaprows)
+dendrow      <- as.logical(argv$dendrow)
+dendcol      <- as.logical(argv$dendcol)
+cluster.by   <- argv$clusterby
+
+# Clustering
+distance_options <- c("euclidean", "maximum", "manhattan", "canberra",
+                      "binary", "minkowski")
+if (argv$distance %in% distance_options){
+    dist.method <- argv$distance
+} else {
+    dist.method <- "euclidean"
+}
+
+clustering_options <- c("ward.D", "ward.D2", "single", "complete", "average",
+                        "mcquitty", "median", "centroid")
+if (argv$clustering %in% clustering_options){
+    clust.method <- argv$clustering
+} else {
+    clust.method <- "average"
+}
 
 # Gage parameters
 comparison.type <- argv$comparisontype  # "ExpVsCtrl"  # or ExpVsExp
@@ -117,18 +153,37 @@ if (file.exists(dbrdata)){
         gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
     } else {
         # Automatically Load GEO dataset
-        gse <- getGEO(argv$accession, GSEMatrix = TRUE)
+        gse <- getGEO(accession, GSEMatrix = TRUE)
     }
     # Convert into ExpressionSet Object
     eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
-if(isdebug){
-  print("Datset has been loaded")
-  print(paste("Analyzing the factor", factor.type))
-  print(paste("for", argv$popA)) 
-  print(paste("against", argv$popB))
+# auto-detect if data is log transformed
+scalable <- function(X) {
+    qx <- as.numeric(quantile(X, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm = T))
+    logc <- (qx[5] > 100) ||
+        (qx[6] - qx[1] > 50 && qx[2] > 0) ||
+        (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
+    return (logc)
 }
+#############################################################################
+#                           Data Preprocessing                              #
+#############################################################################
+
+X <- exprs(eset)  # Get Expression Data
+
+# Remove NA Data from the dataset
+not.null.indexes <- which(complete.cases(X[,])==TRUE)
+X <- X[not.null.indexes,]
+
+# If not log transformed, do the log2 transformed
+if (scalable(X)) {
+    X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
+    X <- log2(X)
+}
+
+if (isdebug){print("Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -215,18 +270,14 @@ if(isdebug){
 if (geneset.type == 'KEGG') {
   # Loading kegg sets
   data(kegg.gs)
-  kg.hsa  = kegg.gsets(organism)                       #this picks out the human sets
-  kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         # no idea but doesn't seem to work without this step
-  # filename <- paste(rundir, "kegg.hsa.sigmet.gsets.RData", sep="")
-  # save(kegg.gs, file = filename) #saves the human sets as an R object
+  kg.hsa  = kegg.gsets(organism)            #this picks out orgamism gene sets
+  kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         
 } else if (geneset.type == 'GO') {
   # Loading GO sets
   go.hs = go.gsets(species="human")       # use species column of bods2
   go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
   go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
   go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
-  # filename <- paste(rundir, "go.hs.gsets.RData", sep="")
-  # save(go.bp, go.mf, go.cc, file = filename)
 }
 
 if(isdebug){
@@ -237,6 +288,18 @@ if(isdebug){
 #               Heatmap                  #
 #############################################################################
 
+# Calculate Outliers Probabilities/ Dissimilarities
+outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
+    # Rank outliers using distance and clustering parameters
+    o <- outliers.ranking(t(X),test.data = NULL, method.pars = NULL,
+                          method = "sizeDiff", # Outlier finding method
+                          clus = list(dist = dist.method,
+                                      alg  = "hclust",
+                                      meth = clust.method))
+    if (isdebug) { print("Outliers have been identified") }
+    return(o$prob.outliers)
+}
+
 get.heatmap <- function(analysis.stats, heatmap.name){
 
     analysis.heatmap<-t(analysis.stats)
@@ -244,6 +307,23 @@ get.heatmap <- function(analysis.stats, heatmap.name){
     row.names(analysis.heatmap)<-gsub("(stats.)", "", row.names(analysis.heatmap))
     col.pal <- colorRampPalette(rev(
         RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
+    
+    # Column dendogram
+    if (dendcol == TRUE){
+            hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
+            outliers <- outlier.probability(X, dist.method, clust.method)
+
+        ann.col <- data.frame(Population    = expression.info[, "population"],
+                              Factor        = expression.info[, "factor.type"],
+                              Dissimilarity = outliers)
+        colnames(ann.col) <- c("Population", factor.type,"Dissimilarity")
+    } else {
+        hc <- FALSE
+        
+        ann.col <- data.frame(Population = expression.info[, "population"],
+                              Factor     = expression.info[, "factor.type"])
+        colnames(ann.col) <- c("Population", factor.type,)
+    }
 
     filename <- paste(rundir, heatmap.name, sep="")
 
@@ -255,7 +335,7 @@ get.heatmap <- function(analysis.stats, heatmap.name){
     pheatmap::pheatmap(t(analysis.heatmap), 
                        cluster_row = F,
                        cluster_cols = T,
-                       annotation_col = pclass,
+                       annotation_col = ann.col,
                        color = col.pal, 
                        fontsize = 6.5,
                        fontsize_row=6, 
@@ -288,38 +368,6 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
     pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
     rownames(analysis.stats) <- pathway.id 
     
-#     #Interaction networks
-#     
-#        if(analysis.type =="ExpVsCtrl"){
-#            #Find expression change between experimental group and control
-#            GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
-#            
-#            ########## COMMON ##########
-#            sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-#            path.ids <- rownames(analysis$greater)[sel]
-#            path.ids2 <- substr(path.ids, 1, 8) 
-#            ########## COMMON ##########
-#            
-#            ##Produces  top 3 interaction networks (from 2 way analysis)
-#            pv.out.list <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = "hsa"))
-#            
-#        }
-#        if(analysis.type =="ExpVsExp"){
-#            
-#            ########## COMMON ##########
-#            sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-#            path.ids <- rownames(analysis$greater)[sel]
-#            path.ids2 <- substr(path.ids, 1, 8) 
-#            ########## COMMON ##########
-#            
-#            ##Interaction pathways for experimental group 1
-#            pv.out.list2 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pid, species = "hsa"))
-#            
-#            ##Interaction pathways for experimental group 2
-#            pv.out.list3 <- sapply(path.ids2[1:3], function(pid) pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pid, species = "hsa"))
-#            
-#        }
-#     
     # Results table
     analysis.results<-analysis$greater
     

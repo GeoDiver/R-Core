@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript interaction_networks.R --dbrdata ~/Desktop/kegg.RData --rundir ~/Desktop/ --pathid "hsa00480"
+# Rscript gage_interaction_networks.R --dbrdata ~/Desktop/kegg.RData --rundir ~/Desktop/ --pathid "hsa00480"
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -18,7 +18,6 @@ suppressMessages(library("gageData"))      # Lets data be used by gage
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("GO.db"))         # Loads GO database
 suppressMessages(library("pathview"))      # Interaction networks & used to get ENTREZ IDs
-suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
 
 #-------------------------------Set parsers---------------------------------------
 
@@ -33,7 +32,6 @@ parser <- add_argument(parser, "--rundir",
 parser <- add_argument(parser, "--pathid",
                        help = "Interaction Network Path ID")
 
-
 # allows arguments to be run via the command line
 argv <- parse_args(parser)
 
@@ -45,15 +43,12 @@ argv <- parse_args(parser)
 rundir          <- argv$rundir
 dbrdata         <- argv$dbrdata
 pathid          <- argv$pathid
-#pathid          <- "hsa00480"
 
 #############################################################################
 #                          Loading Saved Dataset                            #
 #############################################################################
 
-filename <- paste(argv$rundir,"kegg.RData", sep = "")
-#filename <- "/Users/sureshhewapathirana/Desktop/kegg.RData"
-
+filename <- argv$dbrdata #paste(rundir,"kegg.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
@@ -62,33 +57,37 @@ if (file.exists(filename)){
     q(save = "no")
 }    
 
+
 #############################################################################
 #                          Interaction Networks                             #
 #############################################################################
 
 if(analysis.type =="ExpVsCtrl"){
+    
     #Find expression change between experimental group and control
-    GEOdataset.d<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
+    GEOdataset.diff<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
     
-    sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-    path.ids <- rownames(analysis$greater)[sel]
-    path.ids2 <- substr(path.ids, 1, 8) 
-    
-    ##Produces  top 3 interaction networks (from 2 way analysis)
-    pv.out.list <- sapply(pathid, function(pid) pathview(gene.data = GEOdataset.d[,1:2], pathway.id = pid, species = keggcode.organism, kegg.dir = rundir))
+#    sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
+#     path.ids <- rownames(analysis$greater)[sel]
+#     path.ids2 <- substr(path.ids, 1, 8) 
+
+    pathview(gene.data = GEOdataset.diff[,1:2], pathway.id = pathid, 
+             species = keggcode.organism, out.suffix = "gage_pathway")
     
 }
 if(analysis.type =="ExpVsExp"){
     
-    sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-    path.ids <- rownames(analysis$greater)[sel]
-    path.ids2 <- substr(path.ids, 1, 8) 
+#     sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
+#     path.ids <- rownames(analysis$greater)[sel]
+#     path.ids2 <- substr(path.ids, 1, 8) 
     
     ##Interaction pathways for experimental group 1
-    pv.out.list2 <- sapply(pathid, function(pid) pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pid, species = keggcode.organism, kegg.dir = rundir))
+    pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pathid, 
+             species = keggcode.organism, out.suffix = "gage_pathway")
     
     ##Interaction pathways for experimental group 2
-    pv.out.list3 <- sapply(pathid, function(pid) pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pid, species = keggcode.organism, kegg.dir = rundir))
+    pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pathid, 
+             species = keggcode.organism, out.suffix = "gage_pathway")
     
 }
 
