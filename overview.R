@@ -4,6 +4,7 @@
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
 # Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Clustering" --distance "euclidean" --clustering "average" --dev TRUE
+# Rscript overview.R --accession GDS5092 --dbrdata /Users/sureshhewapathirana/Desktop/DS5092.rData --rundir ~/Desktop/dgea/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Group1" --popname2 "Group2" --analyse "Boxplot,Volcano,PCA,Clustering" --distance "euclidean" --clustering "average" --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -270,20 +271,27 @@ if(isdebug){
 
 if (file.exists(dbrdata)){
   load(file = dbrdata)
-  if (isdebug) { print("Dataset has been loaded") }
 } else {
   if (is.na(argv$geodbpath)) {
     # Load data from downloaded file
     gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
   } else {
     # Automatically Load GEO dataset
-    gse <- getGEO(argv$accession, GSEMatrix = TRUE)
+    gse <- getGEO(accession, GSEMatrix = TRUE)
   }
   # Convert into ExpressionSet Object
   eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
+#############################################################################
+#                           Data Preprocessing                              #
+#############################################################################
+
 X <- exprs(eset)  # Get Expression Data
+
+# Remove NA Data from the dataset
+not.null.indexes <- which(complete.cases(X[,])==TRUE)
+X <- X[not.null.indexes,]
 
 # If not log transformed, do the log2 transformed
 if (scalable(X)) {
@@ -291,18 +299,14 @@ if (scalable(X)) {
   X <- log2(X)
 }
 
-if(isdebug){
-  print(paste("Analyzing the factor", factor.type))
-  print(paste("for", pop.name1,":", argv$popA))
-  print(paste("against", pop.name2,":", argv$popB))
-}
+if (isdebug){print("Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
 # Store gene names
 gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
-rownames(X)     <- gene.names
+rownames(X)     <- gene.names[not.null.indexes]
 
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
@@ -350,6 +354,7 @@ if ("Boxplot" %in% analysis.list){
 }
 
 if ("PCA" %in% analysis.list){
+   
   Xpca <- prcomp(t(X), scale = TRUE)
 
   # PC individual and cumulative values

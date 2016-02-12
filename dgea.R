@@ -4,6 +4,7 @@
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
 # Rscript dgea.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
+# Rscript dgea.R --accession GDS5092 --dbrdata ~/Desktop/GDS5092.rData --rundir ~/Desktop/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -201,10 +202,6 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
   return(toptable)
 }
 
-get.dendogram <- function(){
-    
-}
-
 # Heatmap
 heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
                     dist.method, clust.method, path){
@@ -220,17 +217,17 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
             hc <- hclust(dist(t(X.matix), method = dist.method), method = clust.method)
             outliers <- outlier.probability(X.matix, dist.method, clust.method)
       }
-    
-
     ann.col <- data.frame(Population    = exp[, "population"],
                           Factor        = exp[, "factor.type"],
                           Dissimilarity = outliers)
+    colnames(ann.col) <- c("Population", factor.type,"Dissimilarity")
     column.gap <- 0
   } else {
     hc <- FALSE
 
     ann.col <- data.frame(Population = exp[, "population"],
                           Factor     = exp[, "factor.type"])
+    colnames(ann.col) <- c("Population", factor.type)
     column.gap <- length( (which(ann.col[, "Population"] == "Group1") == T) )
   }
 
@@ -311,26 +308,30 @@ if (file.exists(dbrdata)){
   eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
+#############################################################################
+#                           Data Preprocessing                              #
+#############################################################################
+
 X <- exprs(eset)  # Get Expression Data
+
+# Remove NA Data from the dataset
+not.null.indexes <- which(complete.cases(X[,])==TRUE)
+X <- X[not.null.indexes,]
 
 # If not log transformed, do the log2 transformed
 if (scalable(X)) {
-  X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
-  X <- log2(X)
+    X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
+    X <- log2(X)
 }
 
-if (isdebug){
-  print(paste("Analyzing the factor", factor.type))
-  print(paste("for", pop.name1,":", argv$popA))
-  print(paste("against", pop.name2,":", argv$popB))
-}
+if (isdebug){print("Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
 # Store gene names
 gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
-rownames(X)     <- gene.names
+rownames(X)     <- gene.names[not.null.indexes]
 
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
