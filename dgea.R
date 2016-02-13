@@ -316,7 +316,7 @@ if (file.exists(dbrdata)){
   gse <- getGEO(argv$accession, GSEMatrix = TRUE)
     
   # Convert into ExpressionSet Object
-  eset <- GDS2eSet(gse, do.log2 = TRUE)
+  eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
 
 #############################################################################
