@@ -3,8 +3,8 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Clustering" --distance "euclidean" --clustering "average" --dev TRUE
-# Rscript overview.R --accession GDS5092 --dbrdata /Users/sureshhewapathirana/Desktop/DS5092.rData --rundir ~/Desktop/dgea/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Group1" --popname2 "Group2" --analyse "Boxplot,Volcano,PCA,Clustering" --distance "euclidean" --clustering "average" --dev TRUE
+# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA" --distance "euclidean" --clustering "average" --dev TRUE
+# Rscript overview.R --accession GDS5092 --dbrdata /Users/sureshhewapathirana/Desktop/DS5092.rData --rundir ~/Desktop/dgea/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Group1" --popname2 "Group2" --analyse "Boxplot,Volcano,PCA" --distance "euclidean" --clustering "average" --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -150,79 +150,6 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
   return(o$prob.outliers)
 }
 
-# TODO: Add Documentation
-# Clustering dendogram
-clustering <- function(X, dist.method = "euclidean", clust.method = "average", exp){
-
-  dendo  <-  hclust(dist(t(X), method = dist.method), method = clust.method)
-
-  # Factor types
-  sample.factor <- as.factor(exp[,"factor.type"])
-  population <- as.factor(exp[,"population.colour"])
-
-  names(sample.factor) <- exp$Sample
-  names(population ) <- exp$Sample
-
-  # Calculater outliers / dissimilarity
-  outliers <- outlier.probability(X, dist.method, clust.method)
-
-  # Prapare colour bars for dendogram. makecmap function does not support for factor types.
-  # Therefore after this step, lot of customizations were done to forcibly enter factors
-  factor.cmap <- makecmap(as.numeric(sample.factor), n = length(levels(sample.factor)), colFn = colorRampPalette(c('black', 'green')))
-  population.cmap <- makecmap(as.numeric(population), n = length(levels(population)), colFn = colorRampPalette(c('#e199ff', '#96ca00')))
-  outliers.cmap <- makecmap(outliers, n = 10, colFn = colorRampPalette(c('white', '#26c6da')))
-
-  matrix <- data.frame(Factor =  sample.factor, 
-                       Groups = population,
-                       Dissimilarity = cmap( outliers, outliers.cmap))
-
-  # Decide colours for factor based on No of factors
-  # Because brewer.pal supports minimum level = 3
-  if(nlevels(sample.factor)< 3){ 
-      cl <- c("#40c4ff","#64ffda")
-  }else{
-      cl <- I(brewer.pal(nlevels(sample.factor), name = 'Dark2'))
-  }
-
-  # Colour matrix
-  jColors <- with(matrix, data.frame(f = levels(sample.factor),color = cl))
-  
-  # Assign colour to Factor column
-  matrix <- within(matrix,{
-    Factor = jColors$color[matrix$Factor]
-  })
-
-  filename <- paste(run.dir, "clustering.png", sep = "")
-  CairoPNG(file = filename, width = 1200, height = 700, xlab = "Samples")
-
-  # Customized colours add to cmap object
-  factor.cmap$colors         <- levels(jColors$color)
-  factor.cmap$breaks         <- c(as.character(jColors$f)," ")
-  factor.cmap$include.lowest <- TRUE
-  
-  # Customized colours add to cmap object
-  population.cmap$colors         <- c("#96ca00","#e199ff")
-  population.cmap$breaks         <- c("Group2","Group1","")
-  population.cmap$include.lowest <- TRUE
-
-  # Factor name capitalize and assign column names
-  factorname <- paste(toupper(substr(factor.type, 1, 1)), substr(factor.type, 2, nchar(factor.type)), sep="")
-  colnames(matrix) <- c(factorname,"Groups","Dissimilarity")
-  
-  par(mar = c(6.5,6,4,3)+0.1)  # make space for color keys
-  dendromat(dendo, matrix, height = 0.3, ylab = 'Distance')
-
-  vkey(factor.cmap, factorname, y = 0.8, stretch = 3 )
-  vkey(population.cmap, 'Groups', y = 0.5, stretch = 3)
-  vkey(outliers.cmap, 'Dissimilarity', y = 0.0, stretch =2)
-  
-  dev.off()
-
-  if (isdebug) {
-    print(paste("Clustering has been performed", "with distance method:",
-                argv$distance, "and clustering method:", argv$clustering))
-  }
-}
 
 # Principal Component Analysis
 get.pcdata <- function(Xpca){
@@ -366,10 +293,6 @@ if ("PCA" %in% analysis.list){
 
   # adding both data to the json list
   json.list <- append(json.list, list(pcdata = pcplotdata))
-}
-
-if ("Clustering" %in% analysis.list){
-  clustering(X, dist.method, clust.method, expression.info)
 }
 
 if (length(json.list) != 0) {
