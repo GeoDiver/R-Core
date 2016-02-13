@@ -152,7 +152,7 @@ if (file.exists(dbrdata)){
     gse <- getGEO(accession, GSEMatrix = TRUE)
     
     # Convert into ExpressionSet Object
-    eset <- GDS2eSet(gse, do.log2 = FALSE)
+    eset <- GDS2eSet(gse, do.log2 = TRUE)
 }
 
 # Auto-detect if data is log transformed
