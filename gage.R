@@ -7,17 +7,14 @@
 # Rscript gage.R --accession GDS5092 --dbrdata ~/Desktop/GDS5092.RData --rundir ~/Desktop/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
 # ---------------------------------------------------------#
 
-## Analysis specific to the dengue dataset
-
 #----------------------Parameters to bare in mind-----------------------------
 
-# Function to include the following arguments: 
+# Function to include the following arguments:
 # Species= To be fed into bods to get org argument value
 # The column that contains the different groups
 # The identity of the two groups (have an option to merge groups)
 # The GO dataset to be used.
 # The type of gene sets used (kegg.gs is only for humans)
-
 
 #############################################################################
 #                        Import Libraries                                   #
@@ -35,6 +32,9 @@ suppressMessages(library("jsonlite"))      # Convert R object to JSON format
 suppressMessages(library("pathview"))      # Interaction networks & used to get ENTREZ IDs
 suppressMessages(library("pheatmap"))      # Used to create heatmap
 suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
+suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
+suppressMessages(library("org.Mm.eg.db"))  # Species database
+
 
 #-------------------------------Set parsers---------------------------------------
 
@@ -43,31 +43,31 @@ parser <- arg_parser("This parser contains the input arguments")
 
 # General Paeameters
 parser <- add_argument(parser, "--accession",
-    help = "Accession Number of the GEO Database")
+                       help = "Accession Number of the GEO Database")
 parser <- add_argument(parser, "--dbrdata",
-    help = "Downloaded GEO dataset full path")
+                       help = "Downloaded GEO dataset full path")
 parser <- add_argument(parser, "--rundir",
-    help = "The output directory where graphs get saved")
+                       help = "The output directory where graphs get saved")
 parser <- add_argument(parser, "--dev",
-    help = "The output directory where graphs get saved")
+                       help = "The output directory where graphs get saved")
 
 # Sample Parameters
 parser <- add_argument(parser, "--popA",
-    help = "GroupA - all the selected phenotypes (atleast one)",
-    nargs = "+")
+                       help = "GroupA - all the selected phenotypes (atleast one)",
+                       nargs = "+")
 parser <- add_argument(parser, "--popB",
-    help = "GroupB - all the selected phenotypes (atleast one)",
-    nargs = "+")
+                       help = "GroupB - all the selected phenotypes (atleast one)",
+                       nargs = "+")
 parser <- add_argument(parser, "--factor",
-    help = "Factor type to be classified by")
+                       help = "Factor type to be classified by")
 
 # Gage Parameters
 parser <- add_argument(parser, "--comparisontype", help = "ExpVsCtrl or ExpVsExp")
 parser <- add_argument(parser, "--genesettype", help = "KEGG or GO")
 parser <- add_argument(parser, "--geotype",
                        help = "BP - Biological Process or
-                               MF - molecular function
-                               or CC - Cellular Component")
+                       MF - molecular function
+                       or CC - Cellular Component")
 
 # Heatmap
 parser <- add_argument(parser, "--heatmaprows",
@@ -138,11 +138,11 @@ geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 if(isdebug){
-	print("GeoDiver is starting")
+    print("GeoDiver is starting")
 }
 
 if(isdebug){
-	print("Libraries have been loaded")
+    print("Libraries have been loaded")
 }
 
 if (file.exists(dbrdata)){
@@ -171,7 +171,8 @@ scalable <- function(X) {
 #                           Data Preprocessing                              #
 #############################################################################
 
-X <- exprs(eset)  # Get Expression Data
+# Get Expression Data
+X <- exprs(eset)
 
 # Remove NA Data from the dataset
 not.null.indexes <- which(complete.cases(X[,])==TRUE)
@@ -213,14 +214,14 @@ expression.info <- within(expression.info, {
 })
 
 ## Get sample indexes and sample names
-Group1<-  which(expression.info[,"population"] == "Group1") 
-Group1names<- expression.info[Group1,"Sample"]  
+Group1<-  which(expression.info[,"population"] == "Group1")
+Group1names<- expression.info[Group1,"Sample"]
 
-Group2<-  which(expression.info[,"population"] == "Group2") 
-Group2names<- expression.info[Group2,"Sample"]  
+Group2<-  which(expression.info[,"population"] == "Group2")
+Group2names<- expression.info[Group2,"Sample"]
 
 if(isdebug){
-  print("Factors and Populations have been set")
+    print("Factors and Populations have been set")
 }
 
 #############################################################################
@@ -229,27 +230,31 @@ if(isdebug){
 
 ## Creating table of organisms IDs
 
-# Loading data on kegg packages and species 
+# Loading data on kegg packages and species
 data(bods)
+data(korg)
+
+
 
 # Retrieve orgamism from metadata
 organism    <- as.character(Meta(gse)$sample_organism)
 
-# Add latin names to the dataframe
-bods        <- as.data.frame(bods, stringsAsFactors= TRUE )
-latin_names <- c("Anopheles","Arabidopsis thaliana", "Bos taurus", "Caenorhabditis elegans", 
-                 "Canis lupus familiaris", "Drosophila melanogaster", "Danio rerio", "E coli", 
-                 "Escherichia coli O157", "Gallus gallus", "Homo sapiens", "Mus musculus", 
-                 "Macaca mulatta", "Anopheles gambiae", "Pan", "Rattus norvegicus", 
-                 "Saccharomyces cerevisiae", "Sus scrofa", "Xenopus laevis") 
-bods       <- cbind(bods, latin_names)
+# # Add latin names to the dataframe
+# bods        <- as.data.frame(bods, stringsAsFactors= TRUE )
+# latin_names <- c("Anopheles","Arabidopsis thaliana", "Bos taurus", "Caenorhabditis elegans",
+#                  "Canis lupus familiaris", "Drosophila melanogaster", "Danio rerio", "E coli",
+#                  "Escherichia coli O157", "Gallus gallus", "Homo sapiens", "Mus musculus",
+#                  "Macaca mulatta", "Anopheles gambiae", "Pan", "Rattus norvegicus",
+#                  "Saccharomyces cerevisiae", "Sus scrofa", "Xenopus laevis")
+# bods       <- cbind(bods, latin_names)
 
 # Retrieve corresponding kegg organism name for the latin name
-keggcode.organism <- as.character(bods[which(bods[,"latin_names"] == organism),"kegg code"])
+#keggcode.organism <- as.character(bods[which(bods[,"latin_names"] == organism),"kegg code"])
+keggcode.organism <-as.character(korg[which(korg[,"scientific.name"] == organism),"kegg.code"])
 if(length(keggcode.organism )==0){print("ERROR: Oganism not found or does not support for KEGG")}
 
 # Get dataset with expression info
-Y           <-  Table(gse)
+Y <-  Table(gse)
 
 ## Remove probe ID column & convert into data matrix
 Y.matrix <-data.matrix(Y[,-1])
@@ -268,10 +273,10 @@ GEOdataset <- Y.matrix[,-1]
 rownames(GEOdataset) <- Y.matrix[,1]
 
 ## Convert to numerical matrix (for gage function)
-class(GEOdataset) <- "numeric"  
+class(GEOdataset) <- "numeric"
 
 if(isdebug){
-	print("Data Preparation completed")
+    print("Data Preparation completed")
 }
 
 #############################################################################
@@ -279,20 +284,21 @@ if(isdebug){
 #############################################################################
 
 if (geneset.type == 'KEGG') {
-  # Loading kegg sets
-  data(kegg.gs)
-  kg.hsa  = kegg.gsets(organism)            #this picks out orgamism gene sets
-  kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]         
+    # Loading kegg sets
+    data(kegg.gs)
+    kg.hsa  = kegg.gsets(organism)            #this picks out orgamism gene sets
+    kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]
 } else if (geneset.type == 'GO') {
-  # Loading GO sets
-  go.hs = go.gsets(species="human")       # use species column of bods
-  go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
-  go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
-  go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
+    # Loading GO sets
+    organism.common <- as.character(korg[which(korg[,"scientific.name"] == organism ),"common.name"])
+    go.hs = go.gsets(species = organism.common)  # use species column of bods
+    go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
+    go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
+    go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
 }
 
 if(isdebug){
-	print("Gage Data Preparation completed!")
+    print("Gage Data Preparation completed!")
 }
 
 #############################################################################
@@ -313,18 +319,19 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
 }
 
 get.heatmap <- function(analysis.stats, heatmap.name){
-
-    analysis.heatmap<-t(analysis.stats)
-    analysis.heatmap<-analysis.heatmap
-    row.names(analysis.heatmap)<-gsub("(stats.)", "", row.names(analysis.heatmap))
+    
+    analysis.heatmap <- t(analysis.stats)
+    analysis.heatmap <- analysis.heatmap
+    row.names(analysis.heatmap) <- gsub("(stats.)", "", row.names(analysis.heatmap))
+    
     col.pal <- colorRampPalette(rev(
         RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
     
     # Column dendogram
     if (dendcol == TRUE){
-            hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
-            outliers <- outlier.probability(X, dist.method, clust.method)
-
+        hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
+        outliers <- outlier.probability(X, dist.method, clust.method)
+        
         ann.col <- data.frame(Population    = expression.info[, "population"],
                               Factor        = expression.info[, "factor.type"],
                               Dissimilarity = outliers)
@@ -336,51 +343,51 @@ get.heatmap <- function(analysis.stats, heatmap.name){
                               Factor     = expression.info[, "factor.type"])
         colnames(ann.col) <- c("Population", factor.type)
     }
-
+    
     filename <- paste(rundir, heatmap.name, sep="")
-
+    
     if(isdebug ){
-    	print(paste("Saving heatmap", filename))
+        print(paste("Saving heatmap", filename))
     }
-
+    
     CairoSVG(file = filename)
-    pheatmap::pheatmap(t(analysis.heatmap), 
+    pheatmap::pheatmap(t(analysis.heatmap),
                        cluster_row = F,
                        cluster_cols = T,
                        annotation_col = ann.col,
-                       color = col.pal, 
+                       color = col.pal,
                        fontsize = 6.5,
-                       fontsize_row=6, 
+                       fontsize_row=6,
                        fontsize_col = 6
-                       )
+    )
     dev.off()
-
+    
 }
 
 #############################################################################
 #                        GAGE analysis for KEGG                             #
 #############################################################################
 
-kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2, samp.group = G1, compare.option = "unpaired"){
-   
-    analysis <- gage(GEOdataset, gsets = kegg.gs,  
-                         ref = G2, samp = G1, 
-                         same.dir = F, compare = compare.option )
+kegg.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2, samp.group = G1, compare.option = "unpaired"){
+    
+    analysis <- gage(GEOdataset, gsets = kegg.gs,
+                     ref = G2, samp = G1,
+                     same.dir = F, compare = compare.option )
     
     # Returns number of two-direction significantly enriched gene sets
     analysis.sig<-sigGeneSet(analysis)
-   
+    
     if(nrow(analysis.sig$greater) >0){
         # Formatting and preparation for heatmap
         analysis.sig<-as.data.frame(analysis.sig)
         analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
-    
+        
         # Get only Pathway IDs
         m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
         pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
         pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
-        rownames(analysis.stats) <- pathway.id 
-  
+        rownames(analysis.stats) <- pathway.id
+        
         # Results table
         analysis.results<-analysis$greater
         
@@ -405,7 +412,7 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
         get.heatmap(analysis.stats, "gage_heatmap.svg")
         
         filename <- paste(rundir, "kegg.RData", sep="")
-        save( analysis.type, 
+        save( analysis.type,
               GEOdataset,
               analysis,
               Group1,Group1names,
@@ -424,46 +431,59 @@ kegg.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group = G2
 #arguments: go.cc, go.mf, go.bp
 
 go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, compare.option = "unpaired" ){
-  
-        analysis <- gage(GEOdataset, gsets = set.type, 
-                                    ref = ref.group, samp = samp.group, 
-                                    same.dir = F, compare= compare.option)
-     
+    
+    analysis <- gage(GEOdataset, gsets = set.type,
+                     ref = ref.group, samp = samp.group,
+                     same.dir = F, compare= compare.option)
+    
     # Returns number of two-direction significantly enriched gene sets
     analysis.sig<-sigGeneSet(analysis)
-  
-    # Formatting and preparation for heatmap
-    analysis.sig <- as.data.frame(analysis.sig)
-    analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
-
-    # Get only Pathway IDs
-    m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
-    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
-    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
-    rownames(analysis.stats) <- pathway.id 
-    
-    # Results table
-    analysis.results<-analysis$greater
-    
-    # Remove gene sets without zero enrichments
-    analysis.results<-analysis.results[complete.cases(analysis.results),]
-    
-    # Extract Pathway ID and Names
-    m<-regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
-    pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
-    pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
-    
-    # Create top table
-    toptable = data.frame(pathway.id, pathway.name, analysis.results[,1:5])
-    rownames(toptable) <- NULL
-    colnames(toptable)<- NULL
-    
-    # save "Toptable"
-    filename <- paste(rundir, "gage_data.json", sep="")
-    write(toJSON(list(tops = toptable), digits=I(4)), filename )
-    
-    # Creating a heatmap
-    get.heatmap(analysis.stats, "gage_heatmap.svg")
+    if( nrow (analysis.sig$greater) > 0 ){
+        
+        # Formatting and preparation for heatmap
+        analysis.sig <- as.data.frame(analysis.sig)
+        analysis.stats<-analysis.sig[,grep("^stats.GSM", names(analysis.sig), value=TRUE)]
+        
+        # Get only Pathway IDs
+        m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
+        pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+        pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+        rownames(analysis.stats) <- pathway.id
+        
+        # Results table
+        analysis.results<-analysis$greater
+        
+        # Remove gene sets without zero enrichments
+        analysis.results<-analysis.results[complete.cases(analysis.results),]
+        
+        # Extract Pathway ID and Names
+        m<-regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
+        pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
+        pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
+        
+        # Create top table
+        toptable = data.frame(pathway.id, pathway.name, analysis.results[,1:5])
+        rownames(toptable) <- NULL
+        colnames(toptable)<- NULL
+        
+        # save "Toptable"
+        filename <- paste(rundir, "gage_data.json", sep="")
+        write(toJSON(list(tops = toptable), digits=I(4)), filename )
+        
+        # Creating a heatmap
+        get.heatmap(analysis.stats, "gage_heatmap.svg")
+        
+        filename <- paste(rundir, "gage.RData", sep="")
+        save( analysis.type,
+              GEOdataset,
+              analysis,
+              Group1,Group1names,
+              Group2,Group2names,
+              keggcode.organism,
+              file = filename)
+    }else{
+        print("No Significant Results Found!")
+    }
 }
 
 #############################################################################
@@ -482,7 +502,7 @@ if(comparison.type =="ExpVsCtrl"){
 if(geneset.type == "KEGG"){
     kegg.analysis(kegg.gs, comparison.type, G2, G1, comp.option)
     if(isdebug ){
-    	print("KEGG Analysis completed!")
+        print("KEGG Analysis completed!")
     }
 }
 
@@ -496,7 +516,7 @@ if(geneset.type == "GO"){
     }
     
     if(isdebug){
-    	print("GO Analysis completed!")
-	}
+        print("GO Analysis completed!")
+    }
 }
 
