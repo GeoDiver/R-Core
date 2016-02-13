@@ -110,6 +110,7 @@ pop.colour2     <- "#0d47a1"  # Blue
 
 # Toptable
 topgene.count     <- as.numeric(argv$topgenecount)
+heatmap.rows <- topgene.count 
 toptable.sortby   <- "p"
 adjmethod_options <- c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY",
                        "fdr", "none")
@@ -167,7 +168,8 @@ scalable <- function(X) {
 
 # Calculate Outliers Probabilities/ Dissimilarities
 outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
-  # Rank outliers using distance and clustering parameters
+ 
+ # Rank outliers using distance and clustering parameters
   o <- outliers.ranking(t(X),test.data = NULL, method.pars = NULL,
                         method = "sizeDiff", # Outlier finding method
                         clus = list(dist = dist.method,
@@ -203,7 +205,7 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 }
 
 # Heatmap
-heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
+heatmap <- function(X.toptable, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
                     dist.method, clust.method, path){
 
   col.pal <- colorRampPalette(rev(RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
@@ -214,8 +216,8 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
             hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
             outliers <- outlier.probability(X, dist.method, clust.method)
       }else{
-            hc <- hclust(dist(t(X.matix), method = dist.method), method = clust.method)
-            outliers <- outlier.probability(X.matix, dist.method, clust.method)
+            hc <- hclust(dist(t(X.toptable), method = dist.method), method = clust.method)
+            outliers <- outlier.probability(X.toptable, dist.method, clust.method)
       }
     ann.col <- data.frame(Population    = exp[, "population"],
                           Factor        = exp[, "factor.type"],
@@ -236,7 +238,7 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
   filename <- paste(path, "dgea_heatmap.svg", sep = "")
   CairoSVG(file = filename)
 
-  pheatmap(X.matix[1:heatmap.rows, ],
+  pheatmap(X.toptable,
            cluster_row    = dendogram.row,
            cluster_cols   = hc,
            annotation_col = ann.col,
@@ -258,11 +260,9 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 # Apply Bonferroni cut-off as the default thresold value
 volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), path){
 
-  # Highlight genes that have an logFC greater than fold change
-  # a p-value less than Bonferroni cut-off
-  toptable$Significant <- as.factor(abs(toptable$logFC)  > fold.change &
-                                    toptable$P.Value < t)
-
+  # Select only top genes  
+  toptable$Significant <- c(rep(TRUE,topgene.count),rep(FALSE,length(toptable$ID) - topgene.count))
+  
   # Construct the plot object
   vol <- ggplot(data = toptable, aes(x = toptable$logFC, y = -log10(toptable$P.Value), colour = Significant)) +
       geom_point(alpha = 0.4, size = 1.75)  + xlim(c(-max(toptable$logFC) - 0.1, max(toptable$logFC) + 0.1)) + ylim(c(0, max(-log10(toptable$P.Value)) + 0.5)) + xlab("log2 fold change") + ylab("-log10 p-value")
