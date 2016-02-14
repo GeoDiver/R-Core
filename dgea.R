@@ -110,7 +110,6 @@ pop.colour2     <- "#0d47a1"  # Blue
 
 # Toptable
 topgene.count     <- as.numeric(argv$topgenecount)
-heatmap.rows <- topgene.count 
 toptable.sortby   <- "p"
 adjmethod_options <- c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY",
                        "fdr", "none")
@@ -208,7 +207,7 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 }
 
 # Heatmap
-heatmap <- function(X.toptable, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
+heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
                     dist.method, clust.method, path){
 
   col.pal <- colorRampPalette(rev(RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
@@ -221,7 +220,7 @@ heatmap <- function(X.toptable, X, exp, heatmap.rows = 100, dendogram.row, dendo
   if (cluster.by == "Complete"){
       exp.data <- X
   }else{
-      exp.data <- X.toptable
+      exp.data <- X.matix
   }
  
   # Column dendogram
@@ -253,14 +252,14 @@ heatmap <- function(X.toptable, X, exp, heatmap.rows = 100, dendogram.row, dendo
   filename <- paste(path, "dgea_heatmap.svg", sep = "")
   CairoSVG(file = filename)
 
-  pheatmap(X.toptable,
+  pheatmap(X.matix[1:heatmap.rows,],
            cluster_row    = dendogram.row,
            cluster_cols   = hc,
            annotation_col = ann.col,
            legend         = TRUE,
            color          = col.pal,
            fontsize       = 6.5,
-           fontsize_row   = 3.5,
+           fontsize_row   = 3.0,
            fontsize_col   = 3.5,
            gaps_col       = column.gap)
   dev.off()
@@ -313,13 +312,9 @@ if (file.exists(dbrdata)){
   load(file = dbrdata)
   if (isdebug) { print("Dataset has been loaded") }
 } else {
-  if (is.na(argv$geodbpath)) {
-    # Load data from downloaded file
-    gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
-  } else {
-    # Automatically Load GEO dataset
-    gse <- getGEO(argv$accession, GSEMatrix = TRUE)
-  }
+  # Automatically Load GEO dataset
+  gse <- getGEO(argv$accession, GSEMatrix = TRUE)
+    
   # Convert into ExpressionSet Object
   eset <- GDS2eSet(gse, do.log2 = FALSE)
 }
