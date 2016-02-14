@@ -276,8 +276,8 @@ if (geneset.type == "KEGG") {
     kg.org  <- kegg.gsets(organism)            #this picks out orgamism gene sets
     kegg.gs <- kg.org$kg.sets[kg.org$sigmet.idx]
 } else if (geneset.type == "GO") {
-    # Loading GO sets
-    organism.common <- as.character(korg[which(korg[, "scientific.name"] == organism ), "common.name"])
+    organism.common <- as.character(bods[which(bods[, "kegg code"] == keggcode.organism ), "species"])
+    print(paste("Organism Common Name :",organism.common))
     go.hs <- go.gsets(species = organism.common)  # use species column of bods
 }
 
@@ -419,15 +419,17 @@ kegg.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
 
 go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, 
                         compare.option = "unpaired" ){
-    
+    print("GO Analysis started!")
     analysis <- gage(GEOdataset, gsets = set.type,
                      ref = ref.group, samp = samp.group,
                      same.dir = F, compare= compare.option)
-    
+    print("gage function executed!")
     # Returns number of two-direction significantly enriched gene sets
-    analysis.sig<-sigGeneSet(analysis)
+    analysis.sig <- sigGeneSet(analysis)
+    
+    print( nrow (analysis.sig$greater))
     if( nrow (analysis.sig$greater) > 0 ){
-        
+        print("Inside if")
         # Formatting and preparation for heatmap
         analysis.sig <- as.data.frame(analysis.sig)
         analysis.stats <- analysis.sig[,grep("^stats.GSM", names(analysis.sig), value = TRUE)]
@@ -442,7 +444,7 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
         analysis.results <- analysis$greater
         
         # Remove gene sets without zero enrichments
-        analysis.results< -analysis.results[complete.cases(analysis.results), ]
+        analysis.results <- analysis.results[complete.cases(analysis.results), ]
         
         # Extract Pathway ID and Names
         m <- regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
@@ -460,7 +462,7 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
         
         # Creating a heatmap
         get.heatmap(analysis.stats)
-        
+        print("before save session")
         filename <- paste(rundir, "gage.RData", sep="")
         save( analysis.type,
               GEOdataset,
@@ -494,8 +496,10 @@ if(geneset.type == "KEGG"){
     }
 }else if(geneset.type == "GO"){
     if(geo.type == "BP"){       # BP = Biological Process
+        print("GO BP Analysis called")
         go.bp <- go.hs$go.sets[go.hs$go.subs$BP] 
         go.analysis(go.bp, comparison.type, G2, G1,comp.option)
+        print("GO BP Analysis Done")
     } else if(geo.type == "MF"){ # MF = molecular function
         go.mf <- go.hs$go.sets[go.hs$go.subs$MF]
         go.analysis(go.mf, comparison.type, G2, G1,comp.option)
