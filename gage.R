@@ -4,17 +4,7 @@
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
 # Rscript gage.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.RData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
-# Rscript gage.R --accession GDS5092 --dbrdata ~/Desktop/GDS5092.RData --rundir ~/Desktop/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
 # ---------------------------------------------------------#
-
-#----------------------Parameters to bare in mind-----------------------------
-
-# Function to include the following arguments:
-# Species= To be fed into bods to get org argument value
-# The column that contains the different groups
-# The identity of the two groups (have an option to merge groups)
-# The GO dataset to be used.
-# The type of gene sets used (kegg.gs is only for humans)
 
 #############################################################################
 #                        Import Libraries                                   #
@@ -419,17 +409,17 @@ kegg.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
 
 go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, 
                         compare.option = "unpaired" ){
-    print("GO Analysis started!")
+    
     analysis <- gage(GEOdataset, gsets = set.type,
                      ref = ref.group, samp = samp.group,
                      same.dir = F, compare= compare.option)
-    print("gage function executed!")
+   
     # Returns number of two-direction significantly enriched gene sets
     analysis.sig <- sigGeneSet(analysis)
     
     print( nrow (analysis.sig$greater))
     if( nrow (analysis.sig$greater) > 0 ){
-        print("Inside if")
+        
         # Formatting and preparation for heatmap
         analysis.sig <- as.data.frame(analysis.sig)
         analysis.stats <- analysis.sig[,grep("^stats.GSM", names(analysis.sig), value = TRUE)]
@@ -496,10 +486,8 @@ if(geneset.type == "KEGG"){
     }
 }else if(geneset.type == "GO"){
     if(geo.type == "BP"){       # BP = Biological Process
-        print("GO BP Analysis called")
         go.bp <- go.hs$go.sets[go.hs$go.subs$BP] 
         go.analysis(go.bp, comparison.type, G2, G1,comp.option)
-        print("GO BP Analysis Done")
     } else if(geo.type == "MF"){ # MF = molecular function
         go.mf <- go.hs$go.sets[go.hs$go.subs$MF]
         go.analysis(go.mf, comparison.type, G2, G1,comp.option)
