@@ -99,7 +99,7 @@ isdebug         <- ifelse(!is.na(argv$dev), argv$dev, FALSE)
 
 # Sample Parameters
 accession   <- argv$accession
-factor.type <- argv$factor
+factor.type <- as.character(argv$factor)
 population1 <- unlist(strsplit(argv$popA, ","))
 population2 <- unlist(strsplit(argv$popB, ","))
 
@@ -188,7 +188,7 @@ if (isdebug){print("Data Preprocessed!")}
 
 # gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
 # rownames(X)     <- gene.names[not.null.indexes]
-
+print(factor.type)
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
@@ -230,23 +230,13 @@ if (isdebug ){
 data(bods)
 data(korg)
 
-
-
 # Retrieve orgamism from metadata
 organism    <- as.character(Meta(gse)$sample_organism)
 
-# # Add latin names to the dataframe
-# bods        <- as.data.frame(bods, stringsAsFactors= TRUE )
-# latin_names <- c("Anopheles","Arabidopsis thaliana", "Bos taurus", "Caenorhabditis elegans",
-#                  "Canis lupus familiaris", "Drosophila melanogaster", "Danio rerio", "E coli",
-#                  "Escherichia coli O157", "Gallus gallus", "Homo sapiens", "Mus musculus",
-#                  "Macaca mulatta", "Anopheles gambiae", "Pan", "Rattus norvegicus",
-#                  "Saccharomyces cerevisiae", "Sus scrofa", "Xenopus laevis")
-# bods       <- cbind(bods, latin_names)
-
-# Retrieve corresponding kegg organism name for the latin name
-#keggcode.organism <- as.character(bods[which(bods[,"latin_names"] == organism),"kegg code"])
+# Retrieve KEGG code and package for the organism
 keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism),"kegg.code"])
+package <-as.character(bods[which(bods[, "kegg code"] == keggcode.organism),"package"])
+
 if(length(keggcode.organism ) == 0){print("ERROR: Oganism not found or does not support for KEGG")}
 
 # Get dataset with expression info
@@ -256,7 +246,8 @@ Y <-  Table(gse)
 Y.matrix <-data.matrix(Y[, -1])
 
 ## Create two column table containing entrez IDs for geodataset
-id.map.refseq <- id2eg(ids =  Table(gse)$IDENTIFIER, category = "SYMBOL", org = as.character(keggcode.organism))
+id.map.refseq <- id2eg(ids =  Table(gse)$IDENTIFIER, category = "SYMBOL", 
+                       pkg.name = package, org = as.character(keggcode.organism))
 
 ## Replace gene symbols with ENTREZ ID in dataset matrix
 Y.matrix[, 1] <- id.map.refseq[,2]
@@ -282,15 +273,12 @@ if(isdebug){
 if (geneset.type == "KEGG") {
     # Loading kegg sets
     data(kegg.gs)
-    kg.hsa  = kegg.gsets(organism)            #this picks out orgamism gene sets
-    kegg.gs = kg.hsa$kg.sets[kg.hsa$sigmet.idx]
+    kg.org  <- kegg.gsets(organism)            #this picks out orgamism gene sets
+    kegg.gs <- kg.org$kg.sets[kg.org$sigmet.idx]
 } else if (geneset.type == "GO") {
     # Loading GO sets
     organism.common <- as.character(korg[which(korg[, "scientific.name"] == organism ), "common.name"])
-    go.hs = go.gsets(species = organism.common)  # use species column of bods
-    go.bp = go.hs$go.sets[go.hs$go.subs$BP] # BP = Biological Process
-    go.mf = go.hs$go.sets[go.hs$go.subs$MF] # MF = molecular function
-    go.cc = go.hs$go.sets[go.hs$go.subs$CC] # CC = cellular component
+    go.hs <- go.gsets(species = organism.common)  # use species column of bods
 }
 
 if(isdebug){
@@ -298,7 +286,7 @@ if(isdebug){
 }
 
 #############################################################################
-#               Heatmap                  #
+#                            Heatmap                                        #
 #############################################################################
 
 # Calculate Outliers Probabilities/ Dissimilarities
@@ -314,7 +302,7 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
     return(o$prob.outliers)
 }
 
-get.heatmap <- function(analysis.stats, heatmap.name){
+get.heatmap <- function(analysis.stats){
     
     analysis.heatmap <- t(analysis.stats)
     analysis.heatmap <- analysis.heatmap
@@ -325,7 +313,10 @@ get.heatmap <- function(analysis.stats, heatmap.name){
     
     # Column dendogram
     if (dendcol == TRUE){
+        # calculate heirachical clustering
         hc <- hclust(dist(t(X), method = dist.method), method = clust.method)
+        
+        # Find outlier ranking/ probability
         outliers <- outlier.probability(X, dist.method, clust.method)
         
         ann.col <- data.frame(Population    = expression.info[, "population"],
@@ -334,30 +325,32 @@ get.heatmap <- function(analysis.stats, heatmap.name){
         colnames(ann.col) <- c("Population", factor.type,"Dissimilarity")
     } else {
         hc <- FALSE
-        
-        ann.col <- data.frame(Population = expression.info[, "population"],
-                              Factor     = expression.info[, "factor.type"])
+        ann.col <- data.frame(Population    = expression.info[, "population"],
+                              Factor        = expression.info[, "factor.type"])
         colnames(ann.col) <- c("Population", factor.type)
     }
     
-    filename <- paste(rundir, heatmap.name, sep="")
-    
-    if(isdebug ){
-        print(paste("Saving heatmap", filename))
+    trans.analysis <- t(analysis.heatmap)
+    if(nrow(trans.analysis) < heatmap.rows){
+        hdata <- trans.analysis
+    }else{
+        hdata <- trans.analysis[1:heatmap.rows, ]
     }
     
+    filename <- paste(rundir, "gage_heatmap.svg", sep="")
     CairoSVG(file = filename)
-    pheatmap::pheatmap(t(analysis.heatmap),
-                       cluster_row = F,
-                       cluster_cols = T,
-                       annotation_col = ann.col,
-                       color = col.pal,
-                       fontsize = 6.5,
-                       fontsize_row=6,
-                       fontsize_col = 6
-    )
+    pheatmap(hdata,
+             cluster_row    = FALSE,
+             cluster_cols   = TRUE,
+             annotation_col = ann.col,
+             color          = col.pal,
+             fontsize       = 6.5,
+             fontsize_row   = 3.0,
+             fontsize_col   = 3.5)
     dev.off()
-    
+    if(isdebug ){
+        print(paste("Saved heatmap", filename))
+    }
 }
 
 #############################################################################
@@ -405,9 +398,9 @@ kegg.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         write(toJSON(list(tops = toptable), digits=I(4)), filename )
         
         # Creating a heatmap
-        get.heatmap(analysis.stats, "gage_heatmap.svg")
+        get.heatmap(analysis.stats)
         
-        filename <- paste(rundir, "kegg.RData", sep="")
+        filename <- paste(rundir, "gage.RData", sep="")
         save( analysis.type,
               GEOdataset,
               analysis,
@@ -424,8 +417,6 @@ kegg.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
 #          GAGE analysis for Gene ontology sets                             #
 #############################################################################
 
-#arguments: go.cc, go.mf, go.bp
-
 go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.group, 
                         compare.option = "unpaired" ){
     
@@ -441,7 +432,7 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
         analysis.sig <- as.data.frame(analysis.sig)
         analysis.stats <- analysis.sig[,grep("^stats.GSM", names(analysis.sig), value = TRUE)]
         
-        # Get only Pathway IDs
+        # Get only Pathway ID and path name
         m<-regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
         pathway.id   <- unlist(lapply(1:length(m), function(n) split(m[[n]][1], " ")))
         pathway.name <- unlist(lapply(1:length(m), function(n) split(m[[n]][2], " ")))
@@ -468,7 +459,7 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
         write(toJSON(list(tops = toptable), digits=I(4)), filename )
         
         # Creating a heatmap
-        get.heatmap(analysis.stats, "gage_heatmap.svg")
+        get.heatmap(analysis.stats)
         
         filename <- paste(rundir, "gage.RData", sep="")
         save( analysis.type,
@@ -499,20 +490,24 @@ if(comparison.type =="ExpVsCtrl"){
 if(geneset.type == "KEGG"){
     kegg.analysis(kegg.gs, comparison.type, G2, G1, comp.option)
     if(isdebug ){
-        print("KEGG Analysis completed!")
+        print("Analysis completed!")
+    }
+}else if(geneset.type == "GO"){
+    if(geo.type == "BP"){       # BP = Biological Process
+        go.bp <- go.hs$go.sets[go.hs$go.subs$BP] 
+        go.analysis(go.bp, comparison.type, G2, G1,comp.option)
+    } else if(geo.type == "MF"){ # MF = molecular function
+        go.mf <- go.hs$go.sets[go.hs$go.subs$MF]
+        go.analysis(go.mf, comparison.type, G2, G1,comp.option)
+    } else if(geo.type == "CC"){ # CC = cellular component
+        go.cc <- go.hs$go.sets[go.hs$go.subs$CC]
+        go.analysis(go.cc, comparison.type, G2, G1,comp.option)
+    }
+    if(isdebug){
+        print("Analysis completed!")
     }
 }
 
-if(geneset.type == "GO"){
-    if(geo.type == "BP"){
-        go.analysis(go.bp, comparison.type, G2, G1,comp.option)
-    } else if(geo.type == "MF"){
-        go.analysis(go.mf, comparison.type, G2, G1,comp.option)
-    } else if(geo.type == "CC"){
-        go.analysis(go.cc, comparison.type, G2, G1,comp.option)
-    }
-    
-    if(isdebug){
-        print("GO Analysis completed!")
-    }
-}
+
+
+ 
