@@ -452,7 +452,7 @@ go.analysis <- function(set.type , analysis.type = "ExpVsCtrl", ref.group, samp.
         
         # Creating a heatmap
         get.heatmap(analysis.stats)
-        print("before save session")
+      
         filename <- paste(rundir, "gage.RData", sep="")
         save( analysis.type,
               GEOdataset,
