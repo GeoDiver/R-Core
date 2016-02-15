@@ -100,6 +100,7 @@ dbrdata         <- argv$dbrdata
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
 
 # Sample Parameters
+accession       <- argv$accession
 factor.type     <- argv$factor
 population1     <- unlist(strsplit(argv$popA, ","))
 population2     <- unlist(strsplit(argv$popB, ","))
@@ -248,11 +249,17 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
   }
 
   rownames(ann.col) <- exp[, "Sample"]
+  
+  if(nrow(X.matix) < heatmap.rows){
+      hdata <- X.matix                    # Show all 
+  }else{
+      hdata <- X.matix[1:heatmap.rows, ]  # Limit to user specified limit
+  }
 
   filename <- paste(path, "dgea_heatmap.svg", sep = "")
   CairoSVG(file = filename)
 
-  pheatmap(X.matix[1:heatmap.rows,],
+  pheatmap(hdata,
            cluster_row    = dendogram.row,
            cluster_cols   = hc,
            annotation_col = ann.col,
@@ -313,7 +320,7 @@ if (file.exists(dbrdata)){
   if (isdebug) { print("Dataset has been loaded") }
 } else {
   # Automatically Load GEO dataset
-  gse <- getGEO(argv$accession, GSEMatrix = TRUE)
+  gse <- getGEO(accession, GSEMatrix = TRUE)
     
   # Convert into ExpressionSet Object
   eset <- GDS2eSet(gse, do.log2 = FALSE)
