@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript dgea.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
+# Rscript dgea.R --accession GDS999 --dbrdata ~/Desktop/GDS999.rData --rundir ~/Desktop/ --factor "disease.state" --popA "acute rejection" --popB "no rejection" --popname1 "AR" --popname2 "NR" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
 # Rscript dgea.R --accession GDS5092 --dbrdata ~/Desktop/GDS5092.rData --rundir ~/Desktop/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
 # ---------------------------------------------------------#
 
@@ -175,7 +175,7 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
                         clus = list(dist = dist.method,
                                     alg  = "hclust",
                                     meth = clust.method))
-  if (isdebug) { print("Outliers have been identified") }
+  if (isdebug) { print("DGEA: Outliers have been identified") }
   return(o$prob.outliers)
 }
 
@@ -200,7 +200,7 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
   toptable <- topTable(fit, adjust.method = adj.method, sort.by = toptable.sortby, 
                        number = topgene.count)
   if(isdebug){
-    print(paste("TopTable has been produced", 
+    print(paste("DGEA: TopTable has been produced", 
           "for", topgene.count, "genes with the cut-off method:", adj.method))
   }
   return(toptable)
@@ -265,9 +265,9 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
   dev.off()
 
   if (isdebug) {
-    print(paste("Heatmap has been created"))        
-    if (dendrow==TRUE) { print("with a dendogram for rows") }
-    if (dendcol==TRUE) { print("and a dendogram for columns") }
+    print(paste("DGEA: Heatmap has been created"))        
+    if (dendrow==TRUE) { print("DGEA: with a dendogram for rows") }
+    if (dendcol==TRUE) { print("DGEA: and a dendogram for columns") }
   }
 }
 
@@ -287,7 +287,7 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
   ggsave(filename, plot = vol, height = 6, width = 6)
 
   if(isdebug){
-    print(paste("Volcanoplot has been produced", 
+    print(paste("DGEA: Volcanoplot has been produced", 
           "for a foldchange of:", fold.change, "and threshold of:", threshold.value))
   }
 }
@@ -304,13 +304,13 @@ get.volcanodata <- function(toptable){
 #############################################################################
 
 if (isdebug){
-  print("GeoDiver is starting")
-  print("Libraries have been loaded")
+  print("DGEA: GeoDiver is starting")
+  print("DGEA: Libraries have been loaded")
 }
 
 if (file.exists(dbrdata)){
   load(file = dbrdata)
-  if (isdebug) { print("Dataset has been loaded") }
+  if (isdebug) { print("DGEA: Dataset has been loaded") }
 } else {
   # Automatically Load GEO dataset
   gse <- getGEO(argv$accession, GSEMatrix = TRUE)
@@ -335,7 +335,7 @@ if (scalable(X)) {
     X <- log2(X)
 }
 
-if (isdebug){print("Data Preprocessed!")}
+if (isdebug){print("DGEA: Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -381,7 +381,7 @@ data <- within(melt(X), {
 newpclass           <- expression.info$population
 names(newpclass)    <- expression.info$Sample
 
-if (isdebug) { print("Factors and Populations have been set") }
+if (isdebug) { print("DGEA: Factors and Populations have been set") }
 
 #############################################################################
 #                        Function Calling                                   #
@@ -410,7 +410,7 @@ filename <- paste(run.dir, "dgea_toptable.tsv", sep = "")
 write.table(toptable, filename, col.names=NA, sep = "\t" )
 
 if(isdebug){
-  print(paste("Analysis to be performed:", argv$analyse))
+  print(paste("DGEA: Analysis to be performed:", argv$analyse))
 }
 
 if ("Volcano" %in% analysis.list){
