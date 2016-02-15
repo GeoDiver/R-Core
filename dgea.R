@@ -100,6 +100,7 @@ dbrdata         <- argv$dbrdata
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
 
 # Sample Parameters
+accession       <- argv$accession
 factor.type     <- argv$factor
 population1     <- unlist(strsplit(argv$popA, ","))
 population2     <- unlist(strsplit(argv$popB, ","))
@@ -151,6 +152,36 @@ if (!is.na(argv$dev)) {
 } else {
   isdebug <- FALSE
 }
+
+# 
+# accession       <- "GDS999" 
+# run.dir         <- "/Users/sureshhewapathirana/Desktop/"
+# dbrdata         <- "/Users/sureshhewapathirana/Desktop/GDS999.rData"
+# analysis.list   <- "Boxplot,Volcano,PCA,Heatmap,Clustering"
+# 
+# # factor.type     <- "disease.state"
+# # population1     <- c("Dengue Hemorrhagic Fever","Dengue Fever","Convalescent")
+# # population2     <- c("healthy control")
+# 
+# factor.type     <- "disease.state"
+# population1     <- c("acute rejection")
+# population2     <- c("no rejection")
+# 
+# pop.name1       <- "Group1"
+# pop.name2       <- "Group2"
+# pop.colour1     <- "#b71c1c"  # Red
+# pop.colour2     <- "#0d47a1"  # Blue
+# 
+# # --------- Volcano Plot ------------ #
+# no.of.top.genes <- 250 
+# toptable.sortby <- "p"
+# fold.change 	<- 0.0 
+# threshold.value <- 0.05 
+# 
+# x.axis <- "PC1"
+# y.axis <- "PC2"
+# dist.method <- "euclidean"
+# clust.method <- "average"
 
 #############################################################################
 #                          Load Functions                                   #
@@ -248,11 +279,17 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
   }
 
   rownames(ann.col) <- exp[, "Sample"]
+  
+  if(nrow(X.matix) < heatmap.rows){
+      hdata <- X.matix                    # Show all 
+  }else{
+      hdata <- X.matix[1:heatmap.rows, ]  # Limit to user specified limit
+  }
 
   filename <- paste(path, "dgea_heatmap.svg", sep = "")
   CairoSVG(file = filename)
 
-  pheatmap(X.matix[1:heatmap.rows,],
+  pheatmap(hdata,
            cluster_row    = dendogram.row,
            cluster_cols   = hc,
            annotation_col = ann.col,
@@ -313,7 +350,7 @@ if (file.exists(dbrdata)){
   if (isdebug) { print("Dataset has been loaded") }
 } else {
   # Automatically Load GEO dataset
-  gse <- getGEO(argv$accession, GSEMatrix = TRUE)
+  gse <- getGEO(accession, GSEMatrix = TRUE)
     
   # Convert into ExpressionSet Object
   eset <- GDS2eSet(gse, do.log2 = FALSE)
@@ -386,6 +423,13 @@ if (isdebug) { print("Factors and Populations have been set") }
 #############################################################################
 #                        Function Calling                                   #
 #############################################################################
+# adj.method <- "fdr"
+# topgene.count <- 250
+# cluster.by <- 
+# dendcol <- TRUE
+# dendrow  <- TRUE
+# heatmap.rows <- 100
+# cluster.by <- "Complete"
 
 # empty list to collect all data need to be displayed in plotly
 json.list <- list()
