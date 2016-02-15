@@ -407,7 +407,7 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         write(toJSON(list(tops = toptable), digits=I(4)), filename)
         
         # save tab delimited
-        toptable <- 
+        colnames(toptable) <- c("PathwayID", "Pathway","PGeomean","StatMean", "PValue","QValue","SetSize") 
         filename <- paste(rundir, "gage_toptable.tsv", sep = "")
         write.table(toptable, filename, col.names=NA, sep = "\t" )
         
