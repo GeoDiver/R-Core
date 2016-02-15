@@ -214,8 +214,13 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
   col.pal <- colorRampPalette(rev(RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
 
   # Annotation column for samples
-  ann.col <- data.frame(Population = exp[, "population"],
-                        Factor     = exp[, "factor.type"])
+  ann.col <- data.frame(Population = exp[, "population"])
+ 
+   # If there are only few factor levels, then only show colour annotations
+  if(length(levels(exp[, "factor.type"])) < 10){
+      ann.col$Factor <- exp[, "factor.type"]
+      colnames(ann.col) <- c("Population", factor.type)
+  }
   
   # Clustering based on complete dataset or only toptable data
   if (cluster.by == "Complete"){
@@ -235,14 +240,14 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
     
     # Add dissimilarity annotation to the samples annotation
     ann.col$Dissimilarity <- outliers
-    colnames(ann.col) <- c("Population", factor.type,"Dissimilarity")
+    #colnames(ann.col) <- c("Population", factor.type,"Dissimilarity")
     
     column.gap <- 0
     
   } else {
       
     hc <- FALSE
-    colnames(ann.col) <- c("Population", factor.type)
+    #colnames(ann.col) <- c("Population", factor.type)
     
     # Keep a gap between two groups
     column.gap <- length( (which(ann.col[, "Population"] == "Group1") == T) )
@@ -250,6 +255,7 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 
   rownames(ann.col) <- exp[, "Sample"]
   
+  # Limit no of heatmap rows
   if(nrow(X.matix) < heatmap.rows){
       hdata <- X.matix                    # Show all 
   }else{
