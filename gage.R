@@ -125,39 +125,6 @@ comparison.type <- argv$comparisontype  # "ExpVsCtrl"  # or ExpVsExp
 geneset.type    <- argv$genesettype     # "KEGG"  # or "GO"
 geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
 
-
-
-# 
-# rundir          <- "/Users/sureshhewapathirana/Desktop/"
-# dbrdata         <- "/Users/sureshhewapathirana/Desktop/GDS5093.RData"
-# isdebug         <- TRUE
-# 
-# #Sample Parameters
-# accession   <- "GDS5093"
-# factor.type <- "disease.state"
-# population1 <- c("Dengue Hemorrhagic Fever","Convalescent","Dengue Fever")
-# population2 <- c("healthy control")
-# 
-# 
-# # factor.type     <- "disease.state"
-# # population1     <- c("schizophrenia")
-# # population2     <- c("control")
-# 
-# dist.method <- "euclidean"
-# clust.method <- "average"
-# 
-# pop.colour1 <- "#b71c1c"
-# pop.colour2 <- "#0d47a1"
-# 
-# #Gage parameters
-# comparison.type <- "ExpVsCtrl"  # "ExpVsCtrl"  # or ExpVsExp
-# geneset.type    <- "KEGG"     # "KEGG"  # or "GO"
-# geo.type        <- "BP"
-# 
-# dendcol <- TRUE
-# dendrow  <- TRUE
-# heatmap.rows <- 100
-
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
@@ -418,10 +385,6 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
         rownames(analysis.stats) <- pathway.id
         
-        # Results table
-        # sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-        # analysis.results<- analysis$greater[sel]
-        
         analysis.results<- analysis$greater
         
         # Remove gene sets without zero enrichments
@@ -441,7 +404,12 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         
         # save "Toptable"
         filename <- paste(rundir, "gage_data.json", sep="")
-        write(toJSON(list(tops = toptable), digits=I(4)), filename )
+        write(toJSON(list(tops = toptable), digits=I(4)), filename)
+        
+        # save tab delimited
+        toptable <- 
+        filename <- paste(rundir, "gage_toptable.tsv", sep = "")
+        write.table(toptable, filename, col.names=NA, sep = "\t" )
         
         # Creating a heatmap
         get.heatmap(analysis.stats, analysis.type)
