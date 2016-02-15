@@ -134,7 +134,7 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
   ggsave(filename, plot = boxplot, width = 8, height = 4)
 
   if(isdebug){
-    print("Boxplot has been produced")
+    print("Overview: Boxplot has been produced")
   }
 }
 
@@ -146,7 +146,7 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
                         clus = list(dist = dist.method,
                                     alg  = "hclust",
                                     meth = clust.method))
-  if (isdebug) { print("Outliers have been identified") }
+  if (isdebug) { print("Overview: Outliers have been identified") }
   return(o$prob.outliers)
 }
 
@@ -182,7 +182,7 @@ get.pcplotdata <- function(Xpca, populations){
   pc <- unlist(Xscores, recursive = FALSE)
   complete.data <- c(split(sample.names, populations),pc)
     
-  if (isdebug) { print("PCA has been calculated") }
+  if (isdebug) { print("Overview: PCA has been calculated") }
   return(complete.data)
 }
 
@@ -192,8 +192,8 @@ get.pcplotdata <- function(Xpca, populations){
 #############################################################################
 
 if(isdebug){
-  print("GeoDiver is starting")
-  print("Libraries have been loaded")
+  print("Overview: GeoDiver is starting")
+  print("Overview: Libraries have been loaded")
 }
 
 if (file.exists(dbrdata)){
@@ -226,7 +226,7 @@ if (scalable(X)) {
   X <- log2(X)
 }
 
-if (isdebug){print("Data Preprocessed!")}
+if (isdebug){print("Overview: Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -267,7 +267,7 @@ data <- within(melt(X), {
   Groups     <- expression.info[Var2, "population.colour"]
 })
 
-if (isdebug) { print("Factors and Populations have been set") }
+if (isdebug) { print("Overview: Factors and Populations have been set") }
 
 #############################################################################
 #                        Function Calling                                 #
