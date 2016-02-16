@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA" --dev TRUE
+# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,PCA" --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
