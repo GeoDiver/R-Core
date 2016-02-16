@@ -111,7 +111,9 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
   filename <- paste(path, "boxplot.png", sep = "")
   ggsave(filename, plot = boxplot, width = 8, height = 4)
 
-  if (isdebug) { print("Boxplot has been produced") }
+  if (isdebug){
+    print("Overview: Boxplot has been produced")
+  }
 }
 
 # Principal Component Analysis
@@ -149,7 +151,7 @@ get.pcplotdata <- function(Xpca, populations){
   # Split sample names by population and add to the final list
   complete.data <- c(split(sample.names, populations),pc)
     
-  if (isdebug) { print("PCA has been calculated") }
+  if (isdebug) { print("Overview: PCA has been calculated") }
   return(complete.data)
 }
 
@@ -159,8 +161,8 @@ get.pcplotdata <- function(Xpca, populations){
 #############################################################################
 
 if(isdebug){
-  print("GeoDiver is starting")
-  print("Libraries have been loaded")
+  print("Overview: GeoDiver is starting")
+  print("Overview: Libraries have been loaded")
 }
 
 if (file.exists(dbrdata)){
@@ -193,7 +195,7 @@ if (scalable(X)) {
   X <- log2(X)
 }
 
-if (isdebug){print("Data Preprocessed!")}
+if (isdebug){print("Overview: Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -234,7 +236,7 @@ data <- within(melt(X), {
   Groups     <- expression.info[Var2, "population.colour"]
 })
 
-if (isdebug) { print("Factors and Populations have been set") }
+if (isdebug) { print("Overview: Factors and Populations have been set") }
 
 #############################################################################
 #                        Function Calling                                 #

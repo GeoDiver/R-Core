@@ -127,11 +127,11 @@ geneset.type    <- argv$genesettype     # "KEGG"  or "BP" or "MF" or "CC"
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 if (isdebug){
-    print("GeoDiver is starting")
+    print("GAGE: GeoDiver is starting")
 }
 
 if (isdebug){
-    print("Libraries have been loaded")
+    print("GAGE: Libraries have been loaded")
 }
 
 if (file.exists(dbrdata)){
@@ -169,13 +169,13 @@ if (scalable(X)) {
     X <- log2(X)
 }
 
-if (isdebug){print("Data Preprocessed!")}
+if (isdebug){print("GAGE: Data Preprocessed!")}
 
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
 
-if (isdebug){print(paste("Factor :", factor.type))}
+if (isdebug){print(paste("GAGE: Factor :", factor.type))}
 gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
 rownames(X)     <- gene.names[not.null.indexes]
 
@@ -214,7 +214,7 @@ Group2 <-  which(expression.info[, "population"] == "Group2")
 Group2names <- expression.info[Group2, "Sample"]
 
 if (isdebug ){
-    print("Factors and Populations have been set")
+    print("GAGE: Factors and Populations have been set")
 }
 
 #############################################################################
@@ -245,7 +245,7 @@ X <- X[which(is.na(rownames(X)) == FALSE), ]
 geo.dataset <- X
 
 if(isdebug){
-    print("Data Preparation completed")
+    print("GAGE: Data Preparation completed")
 }
 
 #############################################################################
@@ -281,7 +281,7 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
                           clus = list(dist = dist.method,
                                       alg  = "hclust",
                                       meth = clust.method))
-    if (isdebug) { print("Outliers have been identified") }
+    if (isdebug) { print("GAGE: Outliers have been identified") }
     return(o$prob.outliers)
 }
 
@@ -340,8 +340,9 @@ get.heatmap <- function(analysis.stats, analysis.type){
              fontsize_row   = 3.0,
              fontsize_col   = 3.5)
     dev.off()
-    if (isdebug ){
-        print(paste("Saved heatmap", filename))
+    
+    if(isdebug ){
+        print(paste("GAGE: Saved heatmap", filename))
     }
 }
 
@@ -415,7 +416,7 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
 #                        Function Calling                                   #
 #############################################################################
 
-if (isdebug) { print("GAGE analysis starting...") }
+if (isdebug) { print("GAGE: GAGE analysis starting...") }
 compare.option <- ifelse(comparison.type =="ExpVsCtrl", "unpaired", "paired")
 
 if (comparison.type =="ExpVsCtrl"){
@@ -426,7 +427,6 @@ if (comparison.type =="ExpVsCtrl"){
     G1 <- NULL
 }
 
-# Do the GSEA analysis
 gage.analysis(dbdata, comparison.type, G2, G1, compare.option)
 
 if (isdebug) { print("GAGE analysis completed!") }
