@@ -430,4 +430,4 @@ if (comparison.type =="ExpVsCtrl"){
 gage.analysis(dbdata, comparison.type, G2, G1, compare.option)
 
 if (isdebug) { print("GAGE analysis completed!") }
-quit(save = "no", status = 0, runLast = FALSE)
+
