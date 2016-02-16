@@ -2,8 +2,8 @@
 # ---------------------------------------------------------#
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
-# Description   : Differential Gene Expression Analysis    #
-# Rscript gage_interaction_networks.R --dbrdata ~/Desktop/kegg.RData --rundir ~/Desktop/ --pathid "hsa00480"
+# Description   : GSEA Interaction Network Pathways        #
+# Rscript gage_interaction_networks.R --rundir ~/Desktop/ --pathid "hsa00480"
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -19,14 +19,14 @@ suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("GO.db"))         # Loads GO database
 suppressMessages(library("pathview"))      # Interaction networks & used to get ENTREZ IDs
 
-#-------------------------------Set parsers---------------------------------------
+#############################################################################
+#                        Command Line Arguments                             #
+#############################################################################
 
 # set parsers for all input arguments
 parser <- arg_parser("This parser contains the input arguments")
 
-# General Paeameters
-parser <- add_argument(parser, "--dbrdata",
-                       help = "Downloaded GEO dataset full path")
+# General Parameters
 parser <- add_argument(parser, "--rundir",
                        help = "The output directory where graphs get saved")
 parser <- add_argument(parser, "--pathid",
@@ -41,54 +41,43 @@ argv <- parse_args(parser)
 
 # General Parameters
 rundir          <- argv$rundir
-dbrdata         <- argv$dbrdata
 pathid          <- argv$pathid
 
 #############################################################################
 #                          Loading Saved Dataset                            #
 #############################################################################
 
-filename <- argv$dbrdata #paste(rundir,"kegg.RData", sep = "")
+filename <- paste(rundir,"gage.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
 }else{
+    # Exit with error code 1
     print("ERROR:File not found")
-    q(save = "no")
+    quit(save = "no", status = 1, runLast = FALSE)
 }    
-
 
 #############################################################################
 #                          Interaction Networks                             #
 #############################################################################
 
-if(analysis.type =="ExpVsCtrl"){
+if(analysis.type == "ExpVsCtrl"){
     
     #Find expression change between experimental group and control
-    GEOdataset.diff<-GEOdataset[, Group1] - rowMeans(GEOdataset[,Group2])
-    
-#    sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-#     path.ids <- rownames(analysis$greater)[sel]
-#     path.ids2 <- substr(path.ids, 1, 8) 
+    GEOdataset.diff<-geo.dataset[, Group1] - rowMeans(geo.dataset[, Group2])
 
-    pathview(gene.data = GEOdataset.diff[,1:2], pathway.id = pathid, 
+    # Save png and xml files in current working directory
+    pathview(gene.data = GEOdataset.diff[, 1:2], pathway.id = pathid, 
+             species = keggcode.organism, out.suffix = "gage_pathway")
+    
+}else if(analysis.type =="ExpVsExp"){
+    
+    # Interaction pathways for experimental group 1
+    pathview(gene.data = geo.dataset[, Group1names][, 1:2], pathway.id = pathid, 
+             species = keggcode.organism, out.suffix = "gage_pathway")
+    
+    # Interaction pathways for experimental group 2
+    pathview(gene.data = geo.dataset[, Group2names][, 1:2], pathway.id = pathid, 
              species = keggcode.organism, out.suffix = "gage_pathway")
     
 }
-if(analysis.type =="ExpVsExp"){
-    
-#     sel <- analysis$greater[, "q.val"] < 0.1 & !is.na(analysis$greater[, "q.val"])
-#     path.ids <- rownames(analysis$greater)[sel]
-#     path.ids2 <- substr(path.ids, 1, 8) 
-    
-    ##Interaction pathways for experimental group 1
-    pathview(gene.data = GEOdataset[,Group1names][,1:2], pathway.id = pathid, 
-             species = keggcode.organism, out.suffix = "gage_pathway")
-    
-    ##Interaction pathways for experimental group 2
-    pathview(gene.data = GEOdataset[,Group2names][,1:2], pathway.id = pathid, 
-             species = keggcode.organism, out.suffix = "gage_pathway")
-    
-}
-
-

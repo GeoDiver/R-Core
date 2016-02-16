@@ -3,8 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript dgea.R --accession GDS999 --dbrdata ~/Desktop/GDS999.rData --rundir ~/Desktop/ --factor "disease.state" --popA "acute rejection" --popB "no rejection" --popname1 "AR" --popname2 "NR" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
-# Rscript dgea.R --accession GDS5092 --dbrdata ~/Desktop/GDS5092.rData --rundir ~/Desktop/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA,Heatmap,Clustering" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
+# Rscript dgea.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Volcano,PCA,Heatmap" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -240,15 +239,13 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
     
     # Add dissimilarity annotation to the samples annotation
     ann.col$Dissimilarity <- outliers
-    #colnames(ann.col) <- c("Population", factor.type,"Dissimilarity")
-    
+   
     column.gap <- 0
     
   } else {
       
     hc <- FALSE
-    #colnames(ann.col) <- c("Population", factor.type)
-    
+   
     # Keep a gap between two groups
     column.gap <- length( (which(ann.col[, "Population"] == "Group1") == T) )
   }
@@ -285,9 +282,11 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 }
 
 # Apply Bonferroni cut-off as the default thresold value
+# fold.change and threshold value are not used to find significant gene. But it kept
+# remain as there is a plan to extend the functionality with those two parameters.
 volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), path){
 
-  # Select only top genes/ significant genes  
+  # Select only genes which are in toptable 
   toptable$Significant <- c(rep(TRUE,topgene.count),
                             rep(FALSE,length(toptable$ID) - topgene.count))
   
@@ -295,7 +294,7 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
   vol <- ggplot(data = toptable, aes(x = toptable$logFC, y = -log10(toptable$P.Value), colour = Significant)) +
       geom_point(alpha = 0.4, size = 1.75)  + xlim(c(-max(toptable$logFC) - 0.1, max(toptable$logFC) + 0.1)) + ylim(c(0, max(-log10(toptable$P.Value)) + 0.5)) + xlab("log2 fold change") + ylab("-log10 p-value")
 
-  # File saving
+  # File saving as png
   filename <- paste(path, "dgea_volcano.png", sep = "")
   ggsave(filename, plot = vol, height = 6, width = 6)
 
@@ -427,9 +426,10 @@ if(isdebug){
 }
 
 if ("Volcano" %in% analysis.list){
+    # Get data for volcanoplot
     toptable.all <- find.toptable(X, newpclass, toptable.sortby,
                                   length(gene.names))
-
+    # Draw volcano plit
     volcanoplot(toptable.all, fold.change, threshold.value, run.dir)
 
     # save volcanoplot top data as JSON
@@ -441,10 +441,10 @@ if ("Heatmap" %in% analysis.list){
     
     heatmap(X.toptable,X, expression.info, heatmap.rows = heatmap.rows,
             dendrow, dendcol, dist.method, clust.method, run.dir)
-  
 }
 
 if (length(json.list) != 0){
+    # Write to a json file with 4 decimal places
     filename <- paste(run.dir, "dgea_data.json", sep = "")
     write(toJSON(json.list, digits=I(4)), filename )
 }
