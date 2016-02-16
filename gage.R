@@ -176,8 +176,8 @@ if (isdebug){print("GAGE: Data Preprocessed!")}
 #############################################################################
 
 if (isdebug){print(paste("GAGE: Factor :", factor.type))}
-gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
-rownames(X)     <- gene.names[not.null.indexes]
+gene.names      <- as.character((gse@dataTable@table$IDENTIFIER)[not.null.indexes])
+rownames(X)     <- gene.names
 
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
@@ -237,8 +237,11 @@ id.map.refseq <- id2eg(ids =  gene.names, category = "SYMBOL",
                        pkg.name = package, org = as.character(keggcode.organism))
 
 # Replace gene symbols with ENTREZ ID in dataset matrix
-rownames(X) <- id.map.refseq[, 2]
-
+tryCatch({
+  rownames(X) <- id.map.refseq[, 2]
+},error=function(cond){
+   print("ERROR:Gene symbols does not match with ENTREZ ID")   
+})
 # Remove rows without ENTREZ IDs
 X <- X[which(is.na(rownames(X)) == FALSE), ]
 
