@@ -31,9 +31,14 @@ filename <- paste(argv$rundir,"dgea_toptable.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
+    if(geneset.type != "KEGG"){
+        # Exit with error code 1
+        print("ERROR:Interaction Network supports only for KEGG Database.")
+        quit(save = "no", status = 1, runLast = FALSE)
+    }
 }else{
     # Exit with error code 1
-    print("ERROR:File not found")
+    print("ERROR:File not found.Run gage analysis first to see interaction networks")
     quit(save = "no", status = 1, runLast = FALSE)
 }
 
