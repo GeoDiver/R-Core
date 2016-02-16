@@ -17,8 +17,8 @@ suppressMessages(library('jsonlite'))     # Convert R object to JSON format
 parser <- arg_parser("This parser contains the input arguments")
 
 # General Parameters
-parser <- add_argument(parser, "--rundir", help="Full file path of rData file") 
-parser <- add_argument(parser, "--geneid", help="Row Id of the X matrix")    
+parser <- add_argument(parser, "--rundir", help = "Full file path of rData file") 
+parser <- add_argument(parser, "--geneid", help = "Row Id of the X matrix")    
 
 # allow arguments to be run via the command line
 argv   <- parse_args(parser)
@@ -32,22 +32,35 @@ filename <- paste(argv$rundir,"dgea_toptable.RData", sep = "")
 if (file.exists(filename)){
     load(file = filename)
 }else{
+    # Exit with error code 1
     print("ERROR:File not found")
-    q(save = "no")
+    quit(save = "no", status = 1, runLast = FALSE)
 }
 
 #############################################################################
 #                          Retrieve Expression data                         #
 #############################################################################
 
-if((!is.na(argv$rundir))&&(!is.na(X.toptable))){
-    index.group1 <- which((expression.info['population']== 'Group1')==TRUE)
+# check directory exists and availability of toptable expression data
+if ((!is.na(argv$rundir)) && (!is.na(X.toptable))){
+    
+    # get indexes of group 1
+    index.group1 <- which((expression.info["population"] == "Group1") == TRUE)
+    # get sample names (x) and expression data (y)
     g1 <- list( x = names(X.toptable[argv$geneid, index.group1]),
                 y = as.double(X.toptable[argv$geneid, index.group1]))
   
-    index.group2 <- which((expression.info['population']== 'Group2')==TRUE)
+    # get indexes of group 2
+    index.group2 <- which((expression.info["population"] == "Group2") == TRUE)
+    # get sample names (x) and expression data (y)
     g2 <- list(x = names(X.toptable[argv$geneid, index.group2]),
                    y = as.double(X.toptable[argv$geneid, index.group2]))
-    filename <- paste(argv$rundir,'dgea_',argv$geneid,".json", sep = "")
-    write(toJSON(list(group1 = g1 ,group2 = g2)), filename)
+    
+    # write to a file
+    filename <- paste(argv$rundir,"dgea_",argv$geneid,".json", sep = "")
+    write(toJSON(list(group1 = g1 , group2 = g2)), filename)
+} else {
+    # Exit with error code 1
+    print("ERROR:File not found or toptable data not found!")
+    quit(save = "no", status = 1, runLast = FALSE)
 }

@@ -3,8 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA" --distance "euclidean" --clustering "average" --dev TRUE
-# Rscript overview.R --accession GDS5092 --dbrdata /Users/sureshhewapathirana/Desktop/DS5092.rData --rundir ~/Desktop/dgea/ --factor "stress" --popA "normothermia (37C)" --popB "hypothermia (32C)" --popname1 "Group1" --popname2 "Group2" --analyse "Boxplot,Volcano,PCA" --distance "euclidean" --clustering "average" --dev TRUE
+# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,Volcano,PCA" --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -57,12 +56,6 @@ parser <- add_argument(parser, "--popname1",
 parser <- add_argument(parser, "--popname2",
                        help = "name for Group B")
 
-# Clustering
-parser <- add_argument(parser, "--distance",
-                       help = "Distance measurement methods")
-parser <- add_argument(parser, "--clustering",
-                       help = "HCA clustering methods")
-
 # allow arguments to be run via the command line
 argv   <- parse_args(parser)
 
@@ -84,23 +77,6 @@ pop.name2       <- argv$popname2
 pop.colour1     <- "#e199ff" # Purple   
 pop.colour2     <- "#96ca00" # Green
 
-# Clustering
-distance_options <- c("euclidean", "maximum", "manhattan", "canberra",
-                      "binary", "minkowski")
-if (argv$distance %in% distance_options){
-  dist.method <- argv$distance
-} else {
-  dist.method <- "euclidean"
-}
-
-clustering_options <- c("ward.D", "ward.D2", "single", "complete", "average",
-                        "mcquitty", "median", "centroid")
-if (argv$clustering %in% clustering_options){
-  clust.method <- argv$clustering
-} else {
-  clust.method <- "average"
-}
-
 if (!is.na(argv$dev)) {
   isdebug <- argv$dev
 } else {
@@ -113,7 +89,8 @@ if (!is.na(argv$dev)) {
 
 # auto-detect if data is log transformed
 scalable <- function(X) {
-  qx <- as.numeric(quantile(X, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm = T))
+  #  produce sample quantiles corresponding to the given probabilities
+  qx <- as.numeric(quantile(X, c(0.0, 0.25, 0.5, 0.75, 0.99, 1.0), na.rm = T))
   logc <- (qx[5] > 100) ||
       (qx[6] - qx[1] > 50 && qx[2] > 0) ||
       (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
@@ -124,7 +101,8 @@ scalable <- function(X) {
 samples.boxplot <- function(data, pop.colours, pop.names, path){
  
   boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
-  # compute lower and upper whiskers
+  
+  # compute lower and upper whiskers to set the y axis margin
   ylim1 = boxplot.stats(data$value)$stats[c(1, 5)]
 
   # scale y limits based on ylim1
@@ -133,23 +111,8 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
   filename <- paste(path, "boxplot.png", sep = "")
   ggsave(filename, plot = boxplot, width = 8, height = 4)
 
-  if(isdebug){
-    print("Boxplot has been produced")
-  }
+  if (isdebug) { print("Boxplot has been produced") }
 }
-
-# Calculate Outliers Probabilities/ Dissimilarities
-outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
-  # Rank outliers using distance and clustering parameters
-  o <- outliers.ranking(t(X),test.data = NULL, method.pars = NULL,
-                        method = "sizeDiff", # Outlier finding method
-                        clus = list(dist = dist.method,
-                                    alg  = "hclust",
-                                    meth = clust.method))
-  if (isdebug) { print("Outliers have been identified") }
-  return(o$prob.outliers)
-}
-
 
 # Principal Component Analysis
 get.pcdata <- function(Xpca){
@@ -157,7 +120,7 @@ get.pcdata <- function(Xpca){
 
   exp.var <- s$importance[2, ] * 100 # Explained Variance in percentages
   cum.var <- s$importance[3, ] * 100 # Cumulative Variance in percentages
-  pcnames <- names(exp.var)  # PC names
+  pcnames <- names(exp.var)          # PC names
 
   names(exp.var) <- NULL
   names(cum.var) <- NULL
@@ -168,18 +131,22 @@ get.pcdata <- function(Xpca){
 }
 
 get.pcplotdata <- function(Xpca, populations){
+  
   Xscores <- Xpca$x
 
   sample.names <- rownames(Xscores)
   rownames(Xscores) <- NULL
   cols <- colnames(Xscores)
 
-  # TODO: Add Documentation
+  # Take each column of Xscore (as temp variable y) and split based on the population
   Xscores <- lapply(1:nrow(Xscores),
                     function(y) split(Xscores[, y], populations))
   names(Xscores) <- cols
   
+  # Unlist them but not to the dept. outer most list has unlisted
   pc <- unlist(Xscores, recursive = FALSE)
+  
+  # Split sample names by population and add to the final list
   complete.data <- c(split(sample.names, populations),pc)
     
   if (isdebug) { print("PCA has been calculated") }
@@ -235,7 +202,7 @@ if (isdebug){print("Data Preprocessed!")}
 gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
 rownames(X)     <- gene.names[not.null.indexes]
 
-# Phenotype Selection
+# Phenotype selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
 
@@ -244,8 +211,8 @@ expression.info  <- data.frame(pclass, Sample = rownames(pclass),
                                row.names = rownames(pclass))
 
 # Introduce two columns to expression.info :
-#   1. population - new two groups/populations
-#   2. population.colour - colour for two new two groups/populations
+#   1. population - new two groups, if not NA
+#   2. population.colour - colour for two new two groups, if not black colour
 expression.info <- within(expression.info, {
   population        <- ifelse(factor.type %in% population1, "Group1",
                          ifelse(factor.type %in% population2, "Group2", NA))
@@ -296,6 +263,7 @@ if ("PCA" %in% analysis.list){
 }
 
 if (length(json.list) != 0) {
+  # Write to a json file with 4 decimal places
   filename <- paste(run.dir, "data.json", sep = "")
   write(toJSON(json.list, digits=I(4)), filename )
 }

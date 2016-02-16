@@ -2,8 +2,8 @@
 # ---------------------------------------------------------#
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
-# Description   : Differential Gene Expression Analysis    #
-# Rscript gage.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.RData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control"  --comparisontype ExpVsCtrl --genesettype KEGG --geotype BP --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
+# Description   : Gene Set Enrichment Analysis             #
+# Rscript gage.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.RData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control"  --comparisontype ExpVsCtrl --genesettype KEGG --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -21,7 +21,6 @@ suppressMessages(library("GO.db"))         # Loads GO database
 suppressMessages(library("jsonlite"))      # Convert R object to JSON format
 suppressMessages(library("pathview"))      # Interaction networks & used to get ENTREZ IDs
 suppressMessages(library("pheatmap"))      # Used to create heatmap
-suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
 suppressMessages(library("RColorBrewer"))  # Color palette for heatmap
 suppressMessages(library("org.Mm.eg.db"))  # Species database
 
@@ -54,10 +53,10 @@ parser <- add_argument(parser, "--factor",
 
 # Gage Parameters
 parser <- add_argument(parser, "--comparisontype", help = "ExpVsCtrl or ExpVsExp")
-parser <- add_argument(parser, "--genesettype", help = "KEGG or GO")
-parser <- add_argument(parser, "--geotype",
-                       help = "BP - Biological Process or
-                       MF - molecular function
+parser <- add_argument(parser, "--genesettype",
+                       help = "KEGG - KEGG Database or
+                       BP - GO Biological Process or
+                       MF - GO molecular function
                        or CC - Cellular Component")
 
 # Heatmap
@@ -94,8 +93,8 @@ factor.type <- as.character(argv$factor)
 population1 <- unlist(strsplit(argv$popA, ","))
 population2 <- unlist(strsplit(argv$popB, ","))
 
-pop.colour1 <- "#b71c1c"
-pop.colour2 <- "#0d47a1"
+pop.colour1     <- "#b71c1c"  # Red
+pop.colour2     <- "#0d47a1"  # Blue
 
 # Heatmap
 heatmap.rows <- as.numeric(argv$heatmaprows)
@@ -121,9 +120,8 @@ if (argv$clustering %in% clustering_options){
 }
 
 # Gage parameters
-comparison.type <- argv$comparisontype  # "ExpVsCtrl"  # or ExpVsExp
-geneset.type    <- argv$genesettype     # "KEGG"  # or "GO"
-geo.type        <- argv$geotype         # "BP" # or "MF" or "CC"
+comparison.type <- argv$comparisontype  # "ExpVsCtrl" or "ExpVsExp"
+geneset.type    <- argv$genesettype     # "KEGG"  or "BP" or "MF" or "CC"
 
 #############################################################################
 #                        Load GEO Dataset to Start Analysis                 #
@@ -231,33 +229,20 @@ data(korg)
 organism    <- as.character(Meta(gse)$sample_organism)
 
 # Retrieve KEGG code and package for the organism
-keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism),"kegg.code"])
-package <-as.character(bods[which(bods[, "kegg code"] == keggcode.organism),"package"])
+keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
+package <-as.character(bods[which(bods[, "kegg code"] == keggcode.organism), "package"])
 
-# Get dataset with expression info
-#Y <-  Table(gse)
-
-## Remove probe ID column & convert into data matrix
-#Y.matrix <-data.matrix(Y[, -1])
-
-## Create two column table containing entrez IDs for geodataset
+# Create two column table containing entrez IDs for geodataset
 id.map.refseq <- id2eg(ids =  gene.names, category = "SYMBOL", 
                        pkg.name = package, org = as.character(keggcode.organism))
 
-## Replace gene symbols with ENTREZ ID in dataset matrix
-# Y.matrix[, 1] <- id.map.refseq[,2]
-rownames(X) <- id.map.refseq[,2]
+# Replace gene symbols with ENTREZ ID in dataset matrix
+rownames(X) <- id.map.refseq[, 2]
 
-## Remove rows without ENTREZ IDs
-# Y.matrix <- Y.matrix[complete.cases(Y.matrix),]
-X <- X[which(is.na(rownames(X))==FALSE), ]
+# Remove rows without ENTREZ IDs
+X <- X[which(is.na(rownames(X)) == FALSE), ]
 
-## Make first column rownames
-# geo.dataset <- Y.matrix[, -1]
-# rownames(geo.dataset) <- Y.matrix[,1]
-## Convert to numerical matrix (for gage function)
 geo.dataset <- X
-class(geo.dataset) <- "numeric"
 
 if(isdebug){
     print("Data Preparation completed")
@@ -267,19 +252,18 @@ if(isdebug){
 #                          Gage  Data Loading                               #
 #############################################################################
 
-if (geneset.type == "KEGG") {
-    # Loading kegg sets
+if (geneset.type == "KEGG") { # KEGG datasets
     data(kegg.gs)
-    kg.org  <- kegg.gsets(organism)            #this picks out orgamism gene sets
+    kg.org  <- kegg.gsets(organism)               # picks out orgamism gene sets
     dbdata <- kg.org$kg.sets[kg.org$sigmet.idx]
-} else if (geneset.type == "GO") {
+} else { # GO Datasets
     common.name <- as.character(bods[which(bods[, "kegg code"] == keggcode.organism ), "species"])
-    go.hs <- go.gsets(species = common.name)  # use species column of bods
-    if(geo.type == "BP"){       # BP = Biological Process
+    go.hs <- go.gsets(species = common.name)      # use species column of bods
+    if(geneset.type == "BP"){                     # BP = Biological Process
         dbdata <- go.hs$go.sets[go.hs$go.subs$BP] 
-    } else if(geo.type == "MF"){ # MF = molecular function
+    } else if(geneset.type == "MF"){              # MF = molecular function
         dbdata <- go.hs$go.sets[go.hs$go.subs$MF]
-    } else if(geo.type == "CC"){ # CC = cellular component
+    } else if(geneset.type == "CC"){              # CC = cellular component
         dbdata <- go.hs$go.sets[go.hs$go.subs$CC]
     }
 }
@@ -310,10 +294,10 @@ get.heatmap <- function(analysis.stats, analysis.type){
     col.pal <- colorRampPalette(rev(
         RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
     
-    if(analysis.type == "ExpVsCtrl"){ # Remove control group (Group 2)
+    if (analysis.type == "ExpVsCtrl"){ # Remove control group (Group 2)
         X.mat <- X[,Group1]
         exp.info <- expression.info[expression.info[,"population"]== "Group1", ]
-    }else{
+    } else {
         X.mat <- X
         exp.info <- expression.info
     }
@@ -339,9 +323,9 @@ get.heatmap <- function(analysis.stats, analysis.type){
         colnames(ann.col) <- c("Population", factor.type)
     }
     trans.analysis <- t(analysis.heatmap)
-    if(nrow(trans.analysis) < heatmap.rows){
+    if (nrow(trans.analysis) < heatmap.rows){
         hdata <- trans.analysis                    # Show all 
-    }else{
+    } else {
         hdata <- trans.analysis[1:heatmap.rows, ]  # Limit to user specified limit
     }
     
@@ -356,7 +340,7 @@ get.heatmap <- function(analysis.stats, analysis.type){
              fontsize_row   = 3.0,
              fontsize_col   = 3.5)
     dev.off()
-    if(isdebug ){
+    if (isdebug ){
         print(paste("Saved heatmap", filename))
     }
 }
@@ -374,13 +358,14 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
     # Returns number of two-direction significantly enriched gene sets
     analysis.sig <- sigGeneSet(analysis)
     
-    if( nrow(analysis.sig$greater) > 0){
+    if (nrow(analysis.sig$greater) > 0){
         # Formatting and preparation for heatmap
         analysis.sig <- as.data.frame(analysis.sig)
         analysis.stats <- analysis.sig[, grep("^stats.GSM", names(analysis.sig), value = TRUE)]
         
         # Split each pathway names into pathway ID and pathway name
         m <- regmatches(rownames(analysis.sig), regexpr(" ", rownames(analysis.sig)), invert = TRUE)
+        # take each path, split into two and unlist them
         pathway.id   <- unlist(lapply(1:length(m),function(n) split(m[[n]][1], " ")))
         pathway.name <- unlist(lapply(1:length(m),function(n) split(m[[n]][2], " ")))
         rownames(analysis.stats) <- pathway.id
@@ -392,6 +377,7 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         
         # Extract Pathway ID and Names
         m <- regmatches(rownames(analysis.results), regexpr(" ", rownames(analysis.results)), invert = TRUE)
+        # take each path, split into two and unlist them
         pathway.id   <- unlist(lapply(1:length(m), function(n) split(m[[n]][1], " ")))
         pathway.name <- unlist(lapply(1:length(m), function(n) split(m[[n]][2], " ")))
         
@@ -406,7 +392,7 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         filename <- paste(rundir, "gage_data.json", sep="")
         write(toJSON(list(tops = toptable), digits=I(4)), filename)
         
-        # save tab delimited
+        # save toptable to a tab delimited file
         colnames(toptable) <- c("PathwayID", "Pathway","PGeomean","StatMean", "PValue","QValue","SetSize") 
         filename <- paste(rundir, "gage_toptable.tsv", sep = "")
         write.table(toptable, filename, col.names=NA, sep = "\t" )
@@ -419,7 +405,9 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
               Group1, Group1names, Group2,Group2names,
               keggcode.organism,file = filename)
     }else{
+        # Exit with error code 1
         print("No Significant Results Found!")
+        quit(save = "no", status = 1, runLast = FALSE)
     }
 }
 
@@ -430,20 +418,16 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
 if (isdebug) { print("GAGE analysis starting...") }
 compare.option <- ifelse(comparison.type =="ExpVsCtrl", "unpaired", "paired")
 
-if(comparison.type =="ExpVsCtrl"){
+if (comparison.type =="ExpVsCtrl"){
     G2 <- Group2
     G1 <- Group1
-}else{
+} else {
     G2 <- NULL
     G1 <- NULL
 }
 
-if (isdebug) { print("GAGE analysis starting...") }
+# Do the GSEA analysis
 gage.analysis(dbdata, comparison.type, G2, G1, compare.option)
+
 if (isdebug) { print("GAGE analysis completed!") }
-
-
-
-
-
-
+quit(save = "no", status = 0, runLast = FALSE)
