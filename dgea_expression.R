@@ -36,7 +36,7 @@ if (file.exists(filename)){
         print("ERROR:Interaction Network supports only for KEGG Database.")
         quit(save = "no", status = 1, runLast = FALSE)
     }
-}else{
+}else {
     # Exit with error code 1
     print("ERROR:File not found.Run gage analysis first to see interaction networks")
     quit(save = "no", status = 1, runLast = FALSE)
@@ -47,7 +47,7 @@ if (file.exists(filename)){
 #############################################################################
 
 # check directory exists and availability of toptable expression data
-if ((!is.na(argv$rundir)) && (!is.na(X.toptable))){
+if ((!is.na(argv$rundir)) && (!is.na(X.toptable))) {
     
     # get indexes of group 1
     index.group1 <- which((expression.info["population"] == "Group1") == TRUE)

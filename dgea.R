@@ -17,7 +17,6 @@ suppressMessages(library("dendextend"))    # Dendogram extended functionalities
 suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("ggplot2"))       # Graphs designing
-suppressMessages(library("gplots"))        # Graphs designing
 suppressMessages(library("jsonlite"))      # Convert R object to JSON format
 suppressMessages(library("limma"))         # Differencial Gene Expression Analysis
 suppressMessages(library("pheatmap"))      # Heatmap Generating
@@ -168,19 +167,19 @@ scalable <- function(X) {
 
 # Calculate Outliers Probabilities/ Dissimilarities
 outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
- 
+
  # Rank outliers using distance and clustering parameters
   o <- outliers.ranking(t(X),test.data = NULL, method.pars = NULL,
                         method = "sizeDiff", # Outlier finding method
                         clus = list(dist = dist.method,
                                     alg  = "hclust",
                                     meth = clust.method))
-  if (isdebug) { print("DGEA: Outliers have been identified") }
+  if (isdebug) print("DGEA: Outliers have been identified")
   return(o$prob.outliers)
 }
 
 find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
-  
+
   # creates a design (or model) matrix
   design  <- model.matrix(~0 + newpclass)
 
@@ -197,10 +196,10 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
   fit <- eBayes(fit, proportion = 0.01)
 
   # create top Table
-  toptable <- topTable(fit, adjust.method = adj.method, sort.by = toptable.sortby, 
+  toptable <- topTable(fit, adjust.method = adj.method, sort.by = toptable.sortby,
                        number = topgene.count)
   if(isdebug){
-    print(paste("DGEA: TopTable has been produced", 
+    print(paste("DGEA: TopTable has been produced",
           "for", topgene.count, "genes with the cut-off method:", adj.method))
   }
   return(toptable)
@@ -214,47 +213,47 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 
   # Annotation column for samples
   ann.col <- data.frame(Population = exp[, "population"])
- 
+
    # If there are only few factor levels, then only show colour annotations
   if(length(levels(exp[, "factor.type"])) < 10){
       ann.col$Factor <- exp[, "factor.type"]
       colnames(ann.col) <- c("Population", factor.type)
   }
-  
+
   # Clustering based on complete dataset or only toptable data
   if (cluster.by == "Complete"){
       exp.data <- X
   }else{
       exp.data <- X.matix
   }
- 
+
   # Column dendogram
   if (dendogram.col == TRUE){
-    
+
     # calculate heirachical clustering
     hc <- hclust(dist(t(exp.data), method = dist.method), method = clust.method)
-    
+
     # Find outlier ranking/ probability
     outliers <- outlier.probability(exp.data, dist.method, clust.method)
-    
+
     # Add dissimilarity annotation to the samples annotation
     ann.col$Dissimilarity <- outliers
-   
+
     column.gap <- 0
-    
+
   } else {
-      
+
     hc <- FALSE
-   
+
     # Keep a gap between two groups
     column.gap <- length( (which(ann.col[, "Population"] == "Group1") == T) )
   }
 
   rownames(ann.col) <- exp[, "Sample"]
-  
+
   # Limit no of heatmap rows
   if(nrow(X.matix) < heatmap.rows){
-      hdata <- X.matix                    # Show all 
+      hdata <- X.matix                    # Show all
   }else{
       hdata <- X.matix[1:heatmap.rows, ]  # Limit to user specified limit
   }
@@ -275,9 +274,9 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
   dev.off()
 
   if (isdebug) {
-    print(paste("DGEA: Heatmap has been created"))        
-    if (dendrow==TRUE) { print("DGEA: with a dendogram for rows") }
-    if (dendcol==TRUE) { print("DGEA: and a dendogram for columns") }
+    print(paste("DGEA: Heatmap has been created"))
+    if (dendrow==TRUE) print("DGEA: with a dendogram for rows")
+    if (dendcol==TRUE) print("DGEA: and a dendogram for columns")
   }
 }
 
@@ -286,10 +285,10 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 # remain as there is a plan to extend the functionality with those two parameters.
 volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), path){
 
-  # Select only genes which are in toptable 
+  # Select only genes which are in toptable
   toptable$Significant <- c(rep(TRUE,topgene.count),
                             rep(FALSE,length(toptable$ID) - topgene.count))
-  
+
   # Construct the plot object
   vol <- ggplot(data = toptable, aes(x = toptable$logFC, y = -log10(toptable$P.Value), colour = Significant)) +
       geom_point(alpha = 0.4, size = 1.75)  + xlim(c(-max(toptable$logFC) - 0.1, max(toptable$logFC) + 0.1)) + ylim(c(0, max(-log10(toptable$P.Value)) + 0.5)) + xlab("log2 fold change") + ylab("-log10 p-value")
@@ -299,7 +298,7 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
   ggsave(filename, plot = vol, height = 6, width = 6)
 
   if(isdebug){
-    print(paste("DGEA: Volcanoplot has been produced", 
+    print(paste("DGEA: Volcanoplot has been produced",
           "for a foldchange of:", fold.change, "and threshold of:", threshold.value))
   }
 }
@@ -322,13 +321,19 @@ if (isdebug){
 
 if (file.exists(dbrdata)){
   load(file = dbrdata)
-  if (isdebug) { print("DGEA: Dataset has been loaded") }
+  if (isdebug) print("DGEA: Dataset has been loaded")
 } else {
-  # Automatically Load GEO dataset
-  gse <- getGEO(accession, GSEMatrix = TRUE)
-    
-  # Convert into ExpressionSet Object
-  eset <- GDS2eSet(gse, do.log2 = FALSE)
+  tryCatch({
+    # Automatically Load GEO dataset
+    gse <- getGEO(accession, GSEMatrix = TRUE)
+
+    # Convert into ExpressionSet Object
+    eset <- GDS2eSet(gse, do.log2 = FALSE)
+  },error=function(e){
+      print("ERROR:Data input error. Provide valid GDS dataset!")
+      # Exit with error code 1
+      quit(save = "no", status = 1, runLast = FALSE)
+  })
 }
 
 #############################################################################
@@ -347,7 +352,7 @@ if (scalable(X)) {
     X <- log2(X)
 }
 
-if (isdebug){print("DGEA: Data Preprocessed!")}
+if (isdebug) print("DGEA: Data Preprocessed!")
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -393,7 +398,7 @@ data <- within(melt(X), {
 newpclass           <- expression.info$population
 names(newpclass)    <- expression.info$Sample
 
-if (isdebug) { print("DGEA: Factors and Populations have been set") }
+if (isdebug) print("DGEA: Factors and Populations have been set")
 
 #############################################################################
 #                        Function Calling                                   #
@@ -421,9 +426,8 @@ save(X.toptable, expression.info, file = filename)
 filename <- paste(run.dir, "dgea_toptable.tsv", sep = "")
 write.table(toptable, filename, col.names=NA, sep = "\t" )
 
-if(isdebug){
-  print(paste("DGEA: Analysis to be performed:", argv$analyse))
-}
+if(isdebug) print(paste("DGEA: Analysis to be performed:", argv$analyse))
+
 
 if ("Volcano" %in% analysis.list){
     # Get data for volcanoplot
@@ -438,7 +442,7 @@ if ("Volcano" %in% analysis.list){
 }
 
 if ("Heatmap" %in% analysis.list){
-    
+
     heatmap(X.toptable,X, expression.info, heatmap.rows = heatmap.rows,
             dendrow, dendcol, dist.method, clust.method, run.dir)
 }
