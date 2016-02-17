@@ -74,7 +74,7 @@ population1     <- unlist(strsplit(argv$popA, ","))
 population2     <- unlist(strsplit(argv$popB, ","))
 pop.name1       <- argv$popname1
 pop.name2       <- argv$popname2
-pop.colour1     <- "#e199ff" # Purple   
+pop.colour1     <- "#e199ff" # Purple
 pop.colour2     <- "#96ca00" # Green
 
 if (!is.na(argv$dev)) {
@@ -99,9 +99,9 @@ scalable <- function(X) {
 
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
- 
+
   boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
-  
+
   # compute lower and upper whiskers to set the y axis margin
   ylim1 = boxplot.stats(data$value)$stats[c(1, 5)]
 
@@ -111,9 +111,7 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
   filename <- paste(path, "boxplot.png", sep = "")
   ggsave(filename, plot = boxplot, width = 8, height = 4)
 
-  if (isdebug){
-    print("Overview: Boxplot has been produced")
-  }
+  if (isdebug) print("Overview: Boxplot has been produced")
 }
 
 # Principal Component Analysis
@@ -133,7 +131,7 @@ get.pcdata <- function(Xpca){
 }
 
 get.pcplotdata <- function(Xpca, populations){
-  
+
   Xscores <- Xpca$x
 
   sample.names <- rownames(Xscores)
@@ -144,14 +142,14 @@ get.pcplotdata <- function(Xpca, populations){
   Xscores <- lapply(1:nrow(Xscores),
                     function(y) split(Xscores[, y], populations))
   names(Xscores) <- cols
-  
+
   # Unlist them but not to the dept. outer most list has unlisted
   pc <- unlist(Xscores, recursive = FALSE)
-  
+
   # Split sample names by population and add to the final list
   complete.data <- c(split(sample.names, populations),pc)
-    
-  if (isdebug) { print("Overview: PCA has been calculated") }
+
+  if (isdebug) print("Overview: PCA has been calculated")
   return(complete.data)
 }
 
@@ -168,15 +166,17 @@ if(isdebug){
 if (file.exists(dbrdata)){
   load(file = dbrdata)
 } else {
-  if (is.na(argv$geodbpath)) {
-    # Load data from downloaded file
-    gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
-  } else {
+  tryCatch({
     # Automatically Load GEO dataset
     gse <- getGEO(accession, GSEMatrix = TRUE)
-  }
-  # Convert into ExpressionSet Object
-  eset <- GDS2eSet(gse, do.log2 = FALSE)
+
+    # Convert into ExpressionSet Object
+    eset <- GDS2eSet(gse, do.log2 = FALSE)
+  },error=function(e){
+      print("ERROR:Data input error. Provide valid GDS dataset!")
+      # Exit with error code 1
+      quit(save = "no", status = 1, runLast = FALSE)
+  })
 }
 
 #############################################################################
@@ -195,7 +195,7 @@ if (scalable(X)) {
   X <- log2(X)
 }
 
-if (isdebug){print("Overview: Data Preprocessed!")}
+if (isdebug) print("Overview: Data Preprocessed!")
 
 #############################################################################
 #                        Two Population Preparation                         #
@@ -236,7 +236,7 @@ data <- within(melt(X), {
   Groups     <- expression.info[Var2, "population.colour"]
 })
 
-if (isdebug) { print("Overview: Factors and Populations have been set") }
+if (isdebug) print("Overview: Factors and Populations have been set")
 
 #############################################################################
 #                        Function Calling                                 #
@@ -250,7 +250,7 @@ if ("Boxplot" %in% analysis.list){
 }
 
 if ("PCA" %in% analysis.list){
-   
+
   Xpca <- prcomp(t(X), scale = TRUE)
 
   # PC individual and cumulative values
