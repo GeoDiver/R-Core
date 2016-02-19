@@ -24,7 +24,7 @@ suppressMessages(library("pathview"))      # Interaction networks & used to get 
 #############################################################################
 
 # set parsers for all input arguments
-parser <- arg_parser("This parser contains the input arguments")
+parser <- arg_parser("Interaction Network parameters:")
 
 # General Parameters
 parser <- add_argument(parser, "--rundir",
@@ -51,11 +51,17 @@ filename <- paste(rundir,"gage.RData", sep = "")
 
 if (file.exists(filename)){
     load(file = filename)
-}else{
+    if(geneset.type != "KEGG"){
+        # Exit with error code 1
+        print("ERROR:Interaction Network supports only for KEGG Database.")
+        quit(save = "no", status = 1, runLast = FALSE)
+    }
+}else {
     # Exit with error code 1
-    print("ERROR:File not found")
+    print("ERROR:File not found.Run gage analysis first to see interaction networks")
     quit(save = "no", status = 1, runLast = FALSE)
-}    
+}
+
 
 #############################################################################
 #                          Interaction Networks                             #
