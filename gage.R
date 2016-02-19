@@ -29,7 +29,7 @@ suppressMessages(library("org.Mm.eg.db"))  # Species database
 #############################################################################
 
 # set parsers for all input arguments
-parser <- arg_parser("This parser contains the input arguments")
+parser <- arg_parser("Generally Applicable Gene-set/Pathway Analysis parameters:")
 
 # General Paeameters
 parser <- add_argument(parser, "--accession",
@@ -39,7 +39,7 @@ parser <- add_argument(parser, "--dbrdata",
 parser <- add_argument(parser, "--rundir",
                        help = "The output directory where graphs get saved")
 parser <- add_argument(parser, "--dev",
-                       help = "The output directory where graphs get saved")
+                       help = "Boolean value for development envirionment")
 
 # Sample Parameters
 parser <- add_argument(parser, "--popA",
@@ -67,7 +67,7 @@ parser <- add_argument(parser, "--dendrow",
 parser <- add_argument(parser, "--dendcol",
                        help = "Boolean value for display dendogram for Samples")
 parser <- add_argument(parser, "--clusterby",
-                       help = "Cluster by complete dataset or toptable")
+                       help = "Cluster based complete dataset or toptable")
 # Clustering
 parser <- add_argument(parser, "--distance",
                        help = "Distance measurement methods")
@@ -403,7 +403,7 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         get.heatmap(analysis.stats, analysis.type)
 
         filename <- paste(rundir, "gage.RData", sep="")
-        save( analysis.type, geo.dataset, analysis,
+        save( analysis.type, geo.dataset, analysis, geneset.type,
               Group1, Group1names, Group2,Group2names,
               keggcode.organism,file = filename)
     }else{
