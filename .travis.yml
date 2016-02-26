@@ -4,3 +4,4 @@ install:
   - Rscript Installations.R
 script: 
   - bash run.sh
+cache: packages
