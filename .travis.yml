@@ -1,25 +1,6 @@
-language: R
-bioc_required: true
+language: r
+warnings_are_errors: false
+install:
+  - Rscript Installations.R
 script: 
   - bash run.sh
-r_packages:
-  - argparser
-  - Cairo
-  - dendextend
-  - DMwR
-  - GEOquery
-  - ggplot2
-  - gplots
-  - jsonlite
-  - limma
-  - pheatmap
-  - plyr
-  - RColorBrewer
-  - reshape2
-  - squash
-bioc_packages:
-  - GEOquery
-  - gage
-  - gageData
-  - GO.db
-  - pathview
