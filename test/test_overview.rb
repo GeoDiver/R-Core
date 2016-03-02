@@ -57,7 +57,9 @@ class TestOverviewScript
     FileUtils.rm_r overview_run_dir if Dir.exist? overview_run_dir
     FileUtils.mkdir overview_run_dir
     system("#{overview_cmd(geo_db, params)}")
-    assert_output(overview_run_dir, geo_db)
+    assert_output(geo_db)
+  rescue
+    assert_output(geo_db)
   end
 
   def generate_params(db)
@@ -70,7 +72,8 @@ class TestOverviewScript
     }
   end
 
-  def assert_output(overview_run_dir, db)
+  def assert_output(db)
+    overview_run_dir = File.join(@db_path, db, 'overview')
     boxplot   = File.join(overview_run_dir, 'boxplot.png')
     data_json = File.join(overview_run_dir, 'data.json')
     return if File.exist?(boxplot) && File.exist?(data_json)
