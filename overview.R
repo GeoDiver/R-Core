@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,PCA" --dev TRUE
+# Usage         : Rscript overview.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/dgea/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Boxplot,PCA" --dev TRUE
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -66,6 +66,7 @@ argv   <- parse_args(parser)
 # General Parameters
 run.dir         <- argv$rundir
 dbrdata         <- argv$dbrdata
+accession       <- argv$accession
 analysis.list   <- unlist(strsplit(argv$analyse, ","))
 
 # Sample Parameters
@@ -185,9 +186,14 @@ if (file.exists(dbrdata)){
 
 X <- exprs(eset)  # Get Expression Data
 
-# Remove NA Data from the dataset
-not.null.indexes <- which(complete.cases(X[,])==TRUE)
-X <- X[not.null.indexes,]
+# Replace missing value with calculated KNN value 
+tryCatch({
+    X <- knnImputation(X)
+},error=function(e){
+    print("ERROR:Analyse cannot be performed due to bad dataset! Contain plenty of missing values!")
+    # Exit with error code 1
+    quit(save = "no", status = 1, runLast = FALSE)
+})
 
 # If not log transformed, do the log2 transformed
 if (scalable(X)) {
@@ -202,7 +208,7 @@ if (isdebug) print("Overview: Data Preprocessed!")
 #############################################################################
 # Store gene names
 gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
-rownames(X)     <- gene.names[not.null.indexes]
+rownames(X)     <- gene.names
 
 # Phenotype selection
 pclass           <- pData(eset)[factor.type]
