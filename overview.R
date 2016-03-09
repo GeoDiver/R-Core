@@ -62,17 +62,23 @@ argv   <- parse_args(parser)
 #############################################################################
 #                        Command Line Arguments Retrieval                   #
 #############################################################################
+split_arg <- function(vector_arg) {
+  pos <- unlist(gregexpr("[^\\\\],", vector_arg, perl=TRUE))
+  vect <- substring(vector_arg, c(1, pos+2), c(pos, nchar(vector_arg)))
+  vect <- gsub("\\\\,", ",", vect) # replace \\, with ,
+  vect <- gsub("\\\"", '"', vect) #replace \" with "
+  return (vect)
+}
 
 # General Parameters
 run.dir         <- argv$rundir
 dbrdata         <- argv$dbrdata
-accession       <- argv$accession
-analysis.list   <- unlist(strsplit(argv$analyse, ","))
+analysis.list   <- split_arg(argv$analyse)
 
 # Sample Parameters
 factor.type     <- argv$factor
-population1     <- unlist(strsplit(argv$popA, ","))
-population2     <- unlist(strsplit(argv$popB, ","))
+population1     <- split_arg(argv$popA)
+population2     <- split_arg(argv$popB)
 pop.name1       <- argv$popname1
 pop.name2       <- argv$popname2
 pop.colour1     <- "#e199ff" # Purple
