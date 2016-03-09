@@ -81,6 +81,13 @@ argv <- parse_args(parser)
 # #############################################################################
 #                         Command Line Arguments Retrieval                   #
 # #############################################################################
+split_arg <- function(vector_arg) {
+  pos <- unlist(gregexpr("[^\\\\],", vector_arg, perl=TRUE))
+  vect <- substring(vector_arg, c(1, pos+2), c(pos, nchar(vector_arg)))
+  vect <- gsub("\\\\,", ",", vect) # replace \\, with ,
+  vect <- gsub("\\\"", '"', vect) #replace \" with "
+  return (vect)
+}
 
 # General Parameters
 rundir          <- argv$rundir
@@ -90,8 +97,8 @@ isdebug         <- ifelse(!is.na(argv$dev), argv$dev, FALSE)
 # Sample Parameters
 accession   <- argv$accession
 factor.type <- as.character(argv$factor)
-population1 <- unlist(strsplit(argv$popA, ","))
-population2 <- unlist(strsplit(argv$popB, ","))
+population1 <- split_arg(argv$popA)
+population2 <- split_arg(argv$popB)
 
 pop.colour1     <- "#b71c1c"  # Red
 pop.colour2     <- "#0d47a1"  # Blue
