@@ -40,15 +40,20 @@ class TestOverviewScript
   private
 
   def overview_cmd(db, params)
-    "Rscript '#{File.expand_path('overview.R', @rcore_dir)}'" \
+    "Rscript #{File.expand_path('overview.R', @rcore_dir)}" \
     " --dbrdata #{File.join(@db_path, db, "#{db}.RData")}" \
     " --rundir '#{File.join(@db_path, db, 'overview')}/'" \
     " --analyse 'Boxplot,PCA'" \
-    " --accession #{db} --factor '#{params[:factor]}'" \
-    " --popA '#{params[:groupa].join(',')}'" \
-    " --popB '#{params[:groupb].join(',')}'" \
+    " --accession #{db} --factor \"#{params[:factor]}\"" \
+    " --popA \"#{to_comma_delimited_string(params[:groupa])}\"" \
+    " --popB \"#{to_comma_delimited_string(params[:groupb])}\"" \
     " --popname1 'Group1' --popname2 'Group2'" \
     ' --dev TRUE'
+  end
+
+  def to_comma_delimited_string(arr)
+    arr.each { |e| e.gsub!(/(?<!\\),/, '\,') }
+    arr.join(',')
   end
 
   def run_analysis(geo_db)
