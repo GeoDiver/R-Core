@@ -40,7 +40,7 @@ parser <- add_argument(parser, "--analyse", nargs = "+",
 parser <- add_argument(parser, "--geodbpath",
                        help = "GEO Dataset full path")
 parser <- add_argument(parser, "--dev",
-                       help = "The output directory where graphs get saved")
+                       help = "Debug Mode")
 
 # Sample Parameters
 parser <- add_argument(parser, "--accession",
