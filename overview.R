@@ -202,6 +202,8 @@ check.run.dir(run.dir)
 
 X <- exprs(eset)  # Get Expression Data
 
+X <- X[rowSums(is.na(X)) != ncol(X),] # remove rows with missing data
+
 # Replace missing value with calculated KNN value 
 tryCatch({
     X <- knnImputation(X)
