@@ -15,6 +15,7 @@ suppressMessages(library("argparser"))     # Argument passing
 suppressMessages(library("Cairo"))         # Plots saving
 suppressMessages(library("dendextend"))    # Dendogram extended functionalities
 suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
+suppressMessages(library("impute"))        # KNN Imputation
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("ggplot2"))       # Graphs designing
 suppressMessages(library("jsonlite"))      # Convert R object to JSON format
@@ -206,7 +207,8 @@ X <- X[rowSums(is.na(X)) != ncol(X),] # remove rows with missing data
 
 # Replace missing value with calculated KNN value 
 tryCatch({
-    X <- knnImputation(X)
+    imputation <- impute.knn(X)
+    X <- imputation$data
 },error=function(e){
     print("ERROR:Analyse cannot be performed due to bad dataset! Contain plenty of missing values!")
     # Exit with error code 1
