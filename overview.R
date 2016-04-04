@@ -105,6 +105,13 @@ scalable <- function(X) {
   return (logc)
 }
 
+# Check if the run directory exists and if not, create directory...
+check.run.dir <- function(run.dir) {
+  if (!dir.exists(file.path(run.dir))) {
+    dir.create(file.path(run.dir))
+  }
+}
+
 # Boxplot
 samples.boxplot <- function(data, pop.colours, pop.names, path){
 
@@ -116,7 +123,7 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
   # scale y limits based on ylim1
   boxplot <- boxplot + coord_cartesian(ylim = ylim1*1.05)
 
-  filename <- paste(path, "boxplot.png", sep = "")
+  filename <- file.path(path, "boxplot.png")
   ggsave(filename, plot = boxplot, width = 8, height = 4)
 
   if (isdebug) print("Overview: Boxplot has been produced")
@@ -186,6 +193,8 @@ if (file.exists(dbrdata)){
       quit(save = "no", status = 1, runLast = FALSE)
   })
 }
+
+check.run.dir(run.dir)
 
 #############################################################################
 #                           Data Preprocessing                              #
@@ -279,6 +288,6 @@ if ("PCA" %in% analysis.list){
 
 if (length(json.list) != 0) {
   # Write to a json file with 4 decimal places
-  filename <- paste(run.dir, "data.json", sep = "")
+  filename <- file.path(run.dir, "data.json")
   write(toJSON(json.list, digits=I(4)), filename )
 }

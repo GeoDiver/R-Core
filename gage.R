@@ -90,7 +90,7 @@ split_arg <- function(vector_arg) {
 }
 
 # General Parameters
-rundir          <- argv$rundir
+run.dir          <- argv$rundir
 dbrdata         <- argv$dbrdata
 isdebug         <- ifelse(!is.na(argv$dev), argv$dev, FALSE)
 
@@ -141,6 +141,13 @@ scalable <- function(X) {
         (qx[6] - qx[1] > 50 && qx[2] > 0) ||
         (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
     return (logc)
+}
+
+# Check if the run directory exists and if not, create directory...
+check.run.dir <- function(run.dir) {
+  if (!dir.exists(file.path(run.dir))) {
+    dir.create(file.path(run.dir))
+  }
 }
 
 #############################################################################
@@ -202,7 +209,7 @@ get.heatmap <- function(analysis.stats, analysis.type){
         hdata <- trans.analysis[1:heatmap.rows, ]  # Limit to user specified limit
     }
 
-    filename <- paste(rundir, "gage_heatmap.svg", sep="")
+    filename <- file.path(run.dir, "gage_heatmap.svg")
     CairoSVG(file = filename)
     pheatmap(hdata,
              cluster_row    = dendrow,
@@ -263,18 +270,18 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         colnames(toptable) <- NULL
 
         # save "Toptable"
-        filename <- paste(rundir, "gage_data.json", sep="")
+        filename <- file.path(run.dir, "gage_data.json")
         write(toJSON(list(tops = toptable), digits=I(4)), filename)
 
         # save toptable to a tab delimited file
         colnames(toptable) <- c("PathwayID", "Pathway", "PGeomean", "StatMean", "PValue", "QValue", "SetSize")
-        filename <- paste(rundir, "gage_toptable.tsv", sep = "")
+        filename <- file.path(run.dir, "gage_toptable.tsv")
         write.table(toptable, filename, col.names=NA, sep = "\t" )
 
         # Creating a heatmap
         get.heatmap(analysis.stats, analysis.type)
 
-        filename <- paste(rundir, "gage.RData", sep="")
+        filename <- file.path(run.dir, "gage.RData")
         save( analysis.type, geo.dataset, analysis, geneset.type,
               Group1, Group1names, Group2,Group2names,
               keggcode.organism,file = filename)
@@ -306,6 +313,8 @@ if (file.exists(dbrdata)) {
       quit(save = "no", status = 1, runLast = FALSE)
   })
 }
+
+check.run.dir(run.dir)
 
 #############################################################################
 #                           Data Preprocessing                              #

@@ -172,6 +172,13 @@ scalable <- function(X) {
   return (logc)
 }
 
+# Check if the run directory exists and if not, create directory...
+check.run.dir <- function(run.dir) {
+  if (!dir.exists(file.path(run.dir))) {
+    dir.create(file.path(run.dir))
+  }
+}
+
 # Calculate Outliers Probabilities/ Dissimilarities
 outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
 
@@ -265,7 +272,7 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
       hdata <- X.matix[1:heatmap.rows, ]  # Limit to user specified limit
   }
 
-  filename <- paste(path, "dgea_heatmap.svg", sep = "")
+  filename <- file.path(path, "dgea_heatmap.svg")
   CairoSVG(file = filename)
 
   pheatmap(hdata,
@@ -301,7 +308,7 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
       geom_point(alpha = 0.4, size = 1.75)  + xlim(c(-max(toptable$logFC) - 0.1, max(toptable$logFC) + 0.1)) + ylim(c(0, max(-log10(toptable$P.Value)) + 0.5)) + xlab("log2 fold change") + ylab("-log10 p-value")
 
   # File saving as png
-  filename <- paste(path, "dgea_volcano.png", sep = "")
+  filename <- file.path(path, "dgea_volcano.png")
   ggsave(filename, plot = vol, height = 6, width = 6)
 
   if(isdebug){
@@ -342,6 +349,8 @@ if (file.exists(dbrdata)){
       quit(save = "no", status = 1, runLast = FALSE)
   })
 }
+
+check.run.dir(run.dir)
 
 #############################################################################
 #                           Data Preprocessing                              #
@@ -426,11 +435,11 @@ json.list <- append(json.list, list(tops = temp.toptable))
 X.toptable <- X[as.numeric(rownames(toptable)), ]
 
 # save toptable expression data
-filename <- paste(run.dir,"dgea_toptable.RData", sep = "")
+filename <- file.path(run.dir,"dgea_toptable.RData")
 save(X.toptable, expression.info, file = filename)
 
 # save tab delimited
-filename <- paste(run.dir, "dgea_toptable.tsv", sep = "")
+filename <- file.path(run.dir, "dgea_toptable.tsv")
 write.table(toptable, filename, col.names=NA, sep = "\t" )
 
 if(isdebug) print(paste("DGEA: Analysis to be performed:", argv$analyse))
@@ -456,6 +465,6 @@ if ("Heatmap" %in% analysis.list){
 
 if (length(json.list) != 0){
     # Write to a json file with 4 decimal places
-    filename <- paste(run.dir, "dgea_data.json", sep = "")
+    filename <- file.path(run.dir, "dgea_data.json")
     write(toJSON(json.list, digits=I(4)), filename )
 }

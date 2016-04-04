@@ -40,14 +40,20 @@ argv <- parse_args(parser)
 #############################################################################
 
 # General Parameters
-rundir          <- argv$rundir
+run.dir          <- argv$rundir
 pathid          <- argv$pathid
+
+# Check if the run directory exists and if not, exit...
+if (!dir.exists(file.path(run.dir))) {
+  print("ERROR: The Run Directory does not exist.")
+  quit(save = "no", status = 1, runLast = FALSE)
+}
 
 #############################################################################
 #                          Loading Saved Dataset                            #
 #############################################################################
 
-filename <- paste(rundir,"gage.RData", sep = "")
+filename <- file.path(run.dir, "gage.RData")
 
 if (file.exists(filename)){
     load(file = filename)
