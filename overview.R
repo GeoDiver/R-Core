@@ -201,9 +201,13 @@ check.run.dir(run.dir)
 #                           Data Preprocessing                              #
 #############################################################################
 
-X <- exprs(eset)  # Get Expression Data
-
-X <- X[rowSums(is.na(X)) != ncol(X),] # remove rows with missing data
+X           <- exprs(eset)  # Get Expression Data
+rownames(X) <- as.character(gse@dataTable@table$IDENTIFIER)
+if (ncol(X) == 2) {
+  X <- X[complete.cases(X),] # KNN does not work when there are only 2 samples
+} else {
+  X <- X[rowSums(is.na(X)) != ncol(X),] # remove rows with missing data
+}
 
 # Replace missing value with calculated KNN value 
 tryCatch({
@@ -226,10 +230,6 @@ if (isdebug) print("Overview: Data Preprocessed!")
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
-# Store gene names
-gene.names      <- as.character(gse@dataTable@table$IDENTIFIER)
-rownames(X)     <- gene.names
-
 # Phenotype selection
 pclass           <- pData(eset)[factor.type]
 colnames(pclass) <- "factor.type"
