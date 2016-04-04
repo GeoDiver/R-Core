@@ -131,26 +131,8 @@ comparison.type <- argv$comparisontype  # "ExpVsCtrl" or "ExpVsExp"
 geneset.type    <- argv$genesettype     # "KEGG"  or "BP" or "MF" or "CC"
 
 #############################################################################
-#                        Load GEO Dataset to Start Analysis                 #
+#                          Load Functions                                   #
 #############################################################################
-if (isdebug) print("GAGE: GeoDiver is starting")
-if (isdebug) print("GAGE: Libraries have been loaded")
-
-if (file.exists(dbrdata)) {
-    load(file = dbrdata)
-} else {
-  tryCatch({
-    # Automatically Load GEO dataset
-    gse <- getGEO(accession, GSEMatrix = TRUE)
-
-    # Convert into ExpressionSet Object
-    eset <- GDS2eSet(gse, do.log2 = TRUE)
-  },error=function(e){
-      print("ERROR:Data input error. Provide valid GDS dataset!")
-      # Exit with error code 1
-      quit(save = "no", status = 1, runLast = FALSE)
-  })
-}
 
 # Auto-detect if data is log transformed
 scalable <- function(X) {
@@ -160,121 +142,6 @@ scalable <- function(X) {
         (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
     return (logc)
 }
-#############################################################################
-#                           Data Preprocessing                              #
-#############################################################################
-
-# Get Expression Data
-X <- exprs(eset)
-
-# Remove NA Data from the dataset
-not.null.indexes <- which(complete.cases(X[, ]) == TRUE)
-X <- X[not.null.indexes, ]
-
-# If not log transformed, do the log2 transformed
-if (scalable(X)) {
-    X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
-    X <- log2(X)
-}
-
-if (isdebug) print("GAGE: Data Preprocessed!")
-
-#############################################################################
-#                        Two Population Preparation                         #
-#############################################################################
-
-if (isdebug) print(paste("GAGE: Factor :", factor.type))
-gene.names      <- as.character((gse@dataTable@table$IDENTIFIER)[not.null.indexes])
-rownames(X)     <- gene.names
-
-# Phenotype Selection
-pclass           <- pData(eset)[factor.type]
-colnames(pclass) <- "factor.type"
-
-# Create a data frame with the factors
-expression.info  <- data.frame(pclass,
-                               Sample = rownames(pclass),
-                               row.names = rownames(pclass))
-
-# Introduce two columns to expression.info :
-#   1. population - new two groups/populations
-#   2. population.colour - colour for two new two groups/populations
-expression.info <- within(expression.info, {
-    population        <- ifelse(factor.type %in% population1, "Group1",
-                                ifelse(factor.type %in% population2, "Group2", NA))
-    population.colour <- ifelse(factor.type %in% population1, pop.colour1,
-                                ifelse(factor.type %in% population2, pop.colour2,
-                                       "#000000"))
-})
-
-# Convert population column to a factor
-expression.info$population <- as.factor(expression.info$population)
-
-# Remove samples that are not belongs to two populations
-expression.info <- expression.info[complete.cases(expression.info), ]
-X <- X[, (colnames(X) %in% rownames(expression.info))]
-
-# Get sample indexes and sample names
-Group1 <-  which(expression.info[, "population"] == "Group1")
-Group1names <- expression.info[Group1, "Sample"]
-
-Group2 <-  which(expression.info[, "population"] == "Group2")
-Group2names <- expression.info[Group2, "Sample"]
-
-if (isdebug) print("GAGE: Factors and Populations have been set")
-
-#############################################################################
-#                            Data Preparation                               #
-#############################################################################
-
-# Loading data on kegg packages and species
-data(bods)
-data(korg)
-
-# Retrieve orgamism from metadata
-organism    <- as.character(Meta(gse)$sample_organism)
-
-# Retrieve KEGG code and package for the organism
-keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
-package <-as.character(bods[which(bods[, "kegg code"] == keggcode.organism), "package"])
-
-# Create two column table containing entrez IDs for geodataset
-id.map.refseq <- id2eg(ids =  gene.names, category = "SYMBOL",
-                       pkg.name = package, org = as.character(keggcode.organism))
-
-# Replace gene symbols with ENTREZ ID in dataset matrix
-tryCatch({
-  rownames(X) <- id.map.refseq[, 2]
-},error=function(e){
-    print("ERROR:Gene symbols does not match with ENTREZ ID")
-    quit(save = "no", status = 1, runLast = FALSE)
-})
-# Remove rows without ENTREZ IDs
-X <- X[which(is.na(rownames(X)) == FALSE), ]
-
-geo.dataset <- X
-
-if(isdebug) print("GAGE: Data Preparation completed")
-
-#############################################################################
-#                          Gage  Data Loading                               #
-#############################################################################
-
-if (geneset.type == "KEGG") { # KEGG datasets
-    data(kegg.gs)
-    kg.org  <- kegg.gsets(organism)               # picks out orgamism gene sets
-    dbdata <- kg.org$kg.sets[kg.org$sigmet.idx]
-} else { # GO Datasets
-    common.name <- as.character(bods[which(bods[, "kegg code"] == keggcode.organism ), "species"])
-    go.hs <- go.gsets(species = common.name)      # use species column of bods
-    if(geneset.type == "BP"){                     # BP = Biological Process
-        dbdata <- go.hs$go.sets[go.hs$go.subs$BP]
-    } else if(geneset.type == "MF"){              # MF = molecular function
-        dbdata <- go.hs$go.sets[go.hs$go.subs$MF]
-    } else if(geneset.type == "CC"){              # CC = cellular component
-        dbdata <- go.hs$go.sets[go.hs$go.subs$CC]
-    }
-}
 
 #############################################################################
 #                            Heatmap                                        #
@@ -282,7 +149,6 @@ if (geneset.type == "KEGG") { # KEGG datasets
 
 # Calculate Outliers Probabilities/ Dissimilarities
 outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
-
     # Rank outliers using distance and clustering parameters
     o <- outliers.ranking(t(X),test.data = NULL, method.pars = NULL,
                           method = "sizeDiff", # Outlier finding method
@@ -294,7 +160,6 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
 }
 
 get.heatmap <- function(analysis.stats, analysis.type){
-
     analysis.heatmap <- t(analysis.stats)
     analysis.heatmap <- analysis.heatmap
     row.names(analysis.heatmap) <- gsub("(stats.)", "", row.names(analysis.heatmap))
@@ -417,6 +282,144 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
         # Exit with error code 1
         print("No Significant Results Found!")
         quit(save = "no", status = 1, runLast = FALSE)
+    }
+}
+
+#############################################################################
+#                        Load GEO Dataset to Start Analysis                 #
+#############################################################################
+if (isdebug) print("GAGE: GeoDiver is starting")
+if (isdebug) print("GAGE: Libraries have been loaded")
+
+if (file.exists(dbrdata)) {
+    load(file = dbrdata)
+} else {
+  tryCatch({
+    # Automatically Load GEO dataset
+    gse <- getGEO(accession, GSEMatrix = TRUE)
+
+    # Convert into ExpressionSet Object
+    eset <- GDS2eSet(gse, do.log2 = TRUE)
+  },error=function(e){
+      print("ERROR:Data input error. Provide valid GDS dataset!")
+      # Exit with error code 1
+      quit(save = "no", status = 1, runLast = FALSE)
+  })
+}
+
+#############################################################################
+#                           Data Preprocessing                              #
+#############################################################################
+
+# Get Expression Data
+X <- exprs(eset)
+
+# Remove NA Data from the dataset
+not.null.indexes <- which(complete.cases(X[, ]) == TRUE)
+X <- X[not.null.indexes, ]
+
+# If not log transformed, do the log2 transformed
+if (scalable(X)) {
+    X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
+    X <- log2(X)
+}
+
+if (isdebug) print("GAGE: Data Preprocessed!")
+
+#############################################################################
+#                        Two Population Preparation                         #
+#############################################################################
+
+if (isdebug) print(paste("GAGE: Factor :", factor.type))
+gene.names      <- as.character((gse@dataTable@table$IDENTIFIER)[not.null.indexes])
+rownames(X)     <- gene.names
+
+# Phenotype Selection
+pclass           <- pData(eset)[factor.type]
+colnames(pclass) <- "factor.type"
+
+# Create a data frame with the factors
+expression.info  <- data.frame(pclass,
+                               Sample = rownames(pclass),
+                               row.names = rownames(pclass))
+
+# Introduce two columns to expression.info :
+#   1. population - new two groups/populations
+#   2. population.colour - colour for two new two groups/populations
+expression.info <- within(expression.info, {
+    population        <- ifelse(factor.type %in% population1, "Group1",
+                                ifelse(factor.type %in% population2, "Group2", NA))
+    population.colour <- ifelse(factor.type %in% population1, pop.colour1,
+                                ifelse(factor.type %in% population2, pop.colour2,
+                                       "#000000"))
+})
+
+# Convert population column to a factor
+expression.info$population <- as.factor(expression.info$population)
+
+# Remove samples that are not belongs to two populations
+expression.info <- expression.info[complete.cases(expression.info), ]
+X <- X[, (colnames(X) %in% rownames(expression.info))]
+
+# Get sample indexes and sample names
+Group1 <-  which(expression.info[, "population"] == "Group1")
+Group1names <- expression.info[Group1, "Sample"]
+
+Group2 <-  which(expression.info[, "population"] == "Group2")
+Group2names <- expression.info[Group2, "Sample"]
+
+if (isdebug) print("GAGE: Factors and Populations have been set")
+
+#############################################################################
+#                            Data Preparation                               #
+#############################################################################
+
+# Loading data on kegg packages and species
+data(bods)
+data(korg)
+
+# Retrieve orgamism from metadata
+organism    <- as.character(Meta(gse)$sample_organism)
+
+# Retrieve KEGG code and package for the organism
+keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
+package <-as.character(bods[which(bods[, "kegg code"] == keggcode.organism), "package"])
+
+# Create two column table containing entrez IDs for geodataset
+id.map.refseq <- id2eg(ids =  gene.names, category = "SYMBOL",
+                       pkg.name = package, org = as.character(keggcode.organism))
+
+# Replace gene symbols with ENTREZ ID in dataset matrix
+tryCatch({
+  rownames(X) <- id.map.refseq[, 2]
+},error=function(e){
+    print("ERROR:Gene symbols does not match with ENTREZ ID")
+    quit(save = "no", status = 1, runLast = FALSE)
+})
+# Remove rows without ENTREZ IDs
+X <- X[which(is.na(rownames(X)) == FALSE), ]
+
+geo.dataset <- X
+
+if(isdebug) print("GAGE: Data Preparation completed")
+
+#############################################################################
+#                          Gage  Data Loading                               #
+#############################################################################
+
+if (geneset.type == "KEGG") { # KEGG datasets
+    data(kegg.gs)
+    kg.org  <- kegg.gsets(organism)               # picks out orgamism gene sets
+    dbdata <- kg.org$kg.sets[kg.org$sigmet.idx]
+} else { # GO Datasets
+    common.name <- as.character(bods[which(bods[, "kegg code"] == keggcode.organism ), "species"])
+    go.hs <- go.gsets(species = common.name)      # use species column of bods
+    if(geneset.type == "BP"){                     # BP = Biological Process
+        dbdata <- go.hs$go.sets[go.hs$go.subs$BP]
+    } else if(geneset.type == "MF"){              # MF = molecular function
+        dbdata <- go.hs$go.sets[go.hs$go.subs$MF]
+    } else if(geneset.type == "CC"){              # CC = cellular component
+        dbdata <- go.hs$go.sets[go.hs$go.subs$CC]
     }
 }
 
