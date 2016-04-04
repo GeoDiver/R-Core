@@ -277,7 +277,7 @@ if ("Boxplot" %in% analysis.list){
 
 if ("PCA" %in% analysis.list){
 
-  Xpca <- prcomp(t(X), scale = TRUE)
+  Xpca <- prcomp(t(X))
 
   # PC individual and cumulative values
   pcdata <- get.pcdata(Xpca)
