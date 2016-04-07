@@ -11,6 +11,7 @@ class TestOverviewScript
     @results[:does_not_exist] = []
     @mutex                    = Mutex.new
     @pool                     = Pool.new(opt[:num_threads])
+    @threads                  = opt[:num_threads]
   end
 
   def start_analysis(top_limit)
@@ -52,7 +53,10 @@ class TestOverviewScript
   end
 
   def to_comma_delimited_string(arr)
-    arr.each { |e| e.gsub!(/(?<!\\),/, '\,') }
+    arr.each do |e|
+      e.gsub!(/(?<!\\),/, '\,')
+      e.gsub!('-', '\-')
+    end
     arr.join(',')
   end
 
@@ -61,6 +65,14 @@ class TestOverviewScript
     overview_run_dir = File.join(@db_path, geo_db, 'overview')
     FileUtils.rm_r overview_run_dir if Dir.exist? overview_run_dir
     FileUtils.mkdir overview_run_dir
+    if @threads == 1
+      STDERR.puts
+      STDERR.puts '############'
+      STDERR.puts '############'
+      STDERR.puts
+      STDERR.puts overview_cmd(geo_db, params)
+      STDERR.puts
+    end
     system("#{overview_cmd(geo_db, params)}")
     assert_output(geo_db)
   rescue
