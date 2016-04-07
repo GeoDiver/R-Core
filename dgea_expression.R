@@ -25,7 +25,7 @@ argv   <- parse_args(parser)
 
 # Check if the run directory exists and if not, exit...
 if (!dir.exists(file.path(argv$rundir))) {
-  print("ERROR: The Run Directory does not exist.")
+  cat("ERROR: The run directory does not exist.", file=stderr())
   quit(save = "no", status = 1, runLast = FALSE)
 }
 
@@ -38,8 +38,7 @@ filename <- file.path(argv$rundir,"dgea_toptable.RData")
 if (file.exists(filename)){
   load(file = filename)
 } else {
-  # Exit with error code 1
-  print("ERROR:File not found. Run the analysis first to see Expression Profile")
+  cat("ERROR: DGEA Toptable RData file not found.", file=stderr())
   quit(save = "no", status = 1, runLast = FALSE)
 }
 
@@ -65,6 +64,6 @@ if (!is.na(X.toptable)) {
   filename <- file.path(argv$rundir, paste("dgea_", argv$geneid, ".json", sep=''))
   write(toJSON(list(group1 = g1 , group2 = g2)), filename)
 } else {
-  print("ERROR:File not found or toptable data not found!")
+  cat("ERROR: Top table Data not found in the provided Rdata file.", file=stderr())
   quit(save = "no", status = 1, runLast = FALSE)
 }

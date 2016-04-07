@@ -286,9 +286,8 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
               Group1, Group1names, Group2,Group2names,
               keggcode.organism,file = filename)
     }else{
-        # Exit with error code 1
-        print("No Significant Results Found!")
-        quit(save = "no", status = 1, runLast = FALSE)
+      cat("ERROR: No Significant Results Found!", file=stderr())
+      quit(save = "no", status = 1, runLast = FALSE)
     }
 }
 
@@ -308,9 +307,8 @@ if (file.exists(dbrdata)) {
     # Convert into ExpressionSet Object
     eset <- GDS2eSet(gse, do.log2 = TRUE)
   },error=function(e){
-      print("ERROR:Data input error. Provide valid GDS dataset!")
-      # Exit with error code 1
-      quit(save = "no", status = 1, runLast = FALSE)
+    cat("ERROR: Data input error. Provide valid GDS dataset!!", file=stderr())
+    quit(save = "no", status = 1, runLast = FALSE)
   })
 }
 
@@ -402,7 +400,7 @@ id.map.refseq <- id2eg(ids =  gene.names, category = "SYMBOL",
 tryCatch({
   rownames(X) <- id.map.refseq[, 2]
 },error=function(e){
-    print("ERROR:Gene symbols does not match with ENTREZ ID")
+    cat("ERROR: Gene symbols does not match with ENTREZ ID", file=stderr())
     quit(save = "no", status = 1, runLast = FALSE)
 })
 # Remove rows without ENTREZ IDs

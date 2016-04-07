@@ -344,8 +344,7 @@ if (file.exists(dbrdata)){
     # Convert into ExpressionSet Object
     eset <- GDS2eSet(gse, do.log2 = FALSE)
   },error=function(e){
-      print("ERROR:Data input error. Provide valid GDS dataset!")
-      # Exit with error code 1
+      cat("ERROR: Data input error. Provide valid GDS dataset!", file=stderr())
       quit(save = "no", status = 1, runLast = FALSE)
   })
 }

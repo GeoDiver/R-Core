@@ -45,7 +45,7 @@ pathid          <- argv$pathid
 
 # Check if the run directory exists and if not, exit...
 if (!dir.exists(file.path(run.dir))) {
-  print("ERROR: The Run Directory does not exist.")
+  cat("ERROR: The Run Directory does not exist.", file=stderr())
   quit(save = "no", status = 1, runLast = FALSE)
 }
 
@@ -58,14 +58,12 @@ filename <- file.path(run.dir, "gage.RData")
 if (file.exists(filename)){
     load(file = filename)
     if(geneset.type != "KEGG"){
-        # Exit with error code 1
-        print("ERROR:Interaction Network supports only for KEGG Database.")
-        quit(save = "no", status = 1, runLast = FALSE)
+      cat("ERROR: Interaction Network supports only for KEGG Database.", file=stderr())
+      quit(save = "no", status = 1, runLast = FALSE)
     }
 }else {
-    # Exit with error code 1
-    print("ERROR:File not found.Run gage analysis first to see interaction networks")
-    quit(save = "no", status = 1, runLast = FALSE)
+  cat("ERROR: Gage Rdata file not found.", file=stderr())
+  quit(save = "no", status = 1, runLast = FALSE)
 }
 
 

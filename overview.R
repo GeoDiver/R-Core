@@ -189,8 +189,7 @@ if (file.exists(dbrdata)){
     # Convert into ExpressionSet Object
     eset <- GDS2eSet(gse, do.log2 = FALSE)
   },error=function(e){
-      print("ERROR:Data input error. Provide valid GDS dataset!")
-      # Exit with error code 1
+      cat("ERROR: Data input error. Provide valid GDS dataset!", file=stderr())
       quit(save = "no", status = 1, runLast = FALSE)
   })
 }
@@ -214,8 +213,7 @@ tryCatch({
     imputation <- impute.knn(X)
     X <- imputation$data
 },error=function(e){
-    print("ERROR:Analyse cannot be performed due to bad dataset! Contain plenty of missing values!")
-    # Exit with error code 1
+    cat("ERROR: Bad dataset: Unable to run KNN imputation on the dataset.", file=stderr())
     quit(save = "no", status = 1, runLast = FALSE)
 })
 
