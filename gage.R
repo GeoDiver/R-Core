@@ -14,6 +14,7 @@
 suppressMessages(library("argparser"))     # Argument passing
 suppressMessages(library("Cairo"))         # Plots saving
 suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
+suppressMessages(library("impute"))        # KNN Imputation
 suppressMessages(library("gage"))          # Does the analysis
 suppressMessages(library("gageData"))      # Lets data be used by gage
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
@@ -319,12 +320,23 @@ check.run.dir(run.dir)
 #                           Data Preprocessing                              #
 #############################################################################
 
-# Get Expression Data
-X <- exprs(eset)
+X <- exprs(eset)  # Get Expression Data
+gene.names <- as.character(gse@dataTable@table$IDENTIFIER)
+rownames(X) <- gene.names
+if (ncol(X) == 2) {
+  X <- X[complete.cases(X),] # KNN does not work when there are only 2 samples
+} else {
+  X <- X[rowSums(is.na(X)) != ncol(X),] # remove rows with missing data
+}
 
-# Remove NA Data from the dataset
-not.null.indexes <- which(complete.cases(X[, ]) == TRUE)
-X <- X[not.null.indexes, ]
+# Replace missing value with calculated KNN value 
+tryCatch({
+    imputation <- impute.knn(X)
+    X <- imputation$data
+},error=function(e){
+    cat("ERROR: Bad dataset: Unable to run KNN imputation on the dataset.", file=stderr())
+    quit(save = "no", status = 1, runLast = FALSE)
+})
 
 # If not log transformed, do the log2 transformed
 if (scalable(X)) {
@@ -339,8 +351,6 @@ if (isdebug) print("GAGE: Data Preprocessed!")
 #############################################################################
 
 if (isdebug) print(paste("GAGE: Factor :", factor.type))
-gene.names      <- as.character((gse@dataTable@table$IDENTIFIER)[not.null.indexes])
-rownames(X)     <- gene.names
 
 # Phenotype Selection
 pclass           <- pData(eset)[factor.type]
