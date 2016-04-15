@@ -96,6 +96,7 @@ split_arg <- function(vector_arg) {
   vect <- substring(vector_arg, c(1, pos+2), c(pos, nchar(vector_arg)))
   vect <- gsub("\\\\,", ",", vect) # replace \\, with ,
   vect <- gsub("\\\"", '"', vect) #replace \" with "
+  vect <- gsub('\\\\-', '-', vect) # replace \\- with -
   return (vect)
 }
 
