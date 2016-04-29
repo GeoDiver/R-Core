@@ -15,7 +15,6 @@ suppressMessages(library("argparser"))     # Argument passing
 suppressMessages(library("Cairo"))         # Plots saving
 suppressMessages(library("dendextend"))    # Dendogram extended functionalities
 suppressMessages(library("DMwR"))          # Outlier Prediction for clustering
-suppressMessages(library("impute"))        # KNN Imputation
 suppressMessages(library("GEOquery"))      # GEO dataset Retrieval
 suppressMessages(library("ggplot2"))       # Graphs designing
 suppressMessages(library("jsonlite"))      # Convert R object to JSON format
@@ -163,16 +162,6 @@ if (!is.na(argv$dev)) {
 #############################################################################
 #                          Load Functions                                   #
 #############################################################################
-
-# auto-detect if data is log transformed
-scalable <- function(X) {
-  # sample quantiles corresponding to the given probabilities
-  qx <- as.numeric(quantile(X, c(0., 0.25, 0.5, 0.75, 0.99, 1.0), na.rm = T))
-  logc <- (qx[5] > 100) ||
-      (qx[6] - qx[1] > 50 && qx[2] > 0) ||
-      (qx[2] > 0 && qx[2] < 1 && qx[4] > 1 && qx[4] < 2)
-  return (logc)
-}
 
 # Check if the run directory exists and if not, create directory...
 check.run.dir <- function(run.dir) {
@@ -330,65 +319,22 @@ get.volcanodata <- function(toptable){
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 
-if (isdebug){
-  print("DGEA: GeoDiver is starting")
-  print("DGEA: Libraries have been loaded")
-}
-
 if (file.exists(dbrdata)){
+  if(isdebug) print("DGEA: Loading Database data.")
   load(file = dbrdata)
-  if (isdebug) print("DGEA: Dataset has been loaded")
 } else {
-  tryCatch({
-    # Automatically Load GEO dataset
-    gse <- getGEO(accession, GSEMatrix = TRUE)
-
-    # Convert into ExpressionSet Object
-    eset <- GDS2eSet(gse, do.log2 = FALSE)
-  },error=function(e){
-      cat("ERROR: Data input error. Provide valid GDS dataset!", file=stderr())
-      quit(save = "no", status = 1, runLast = FALSE)
-  })
+  cat("ERROR: Data input error. Provide valid GDS dataset!", file=stderr())
+  quit(save = "no", status = 200, runLast = FALSE)
 }
 
 check.run.dir(run.dir)
-
-#############################################################################
-#                           Data Preprocessing                              #
-#############################################################################
-
-X <- exprs(eset)  # Get Expression Data
-gene.names <- as.character(gse@dataTable@table$IDENTIFIER)
-rownames(X) <- gene.names
-if (ncol(X) == 2) {
-  X <- X[complete.cases(X),] # KNN does not work when there are only 2 samples
-} else {
-  X <- X[rowSums(is.na(X)) != ncol(X),] # remove rows with missing data
-}
-
-# Replace missing value with calculated KNN value 
-tryCatch({
-    imputation <- impute.knn(X)
-    X <- imputation$data
-},error=function(e){
-    cat("ERROR: Bad dataset: Unable to run KNN imputation on the dataset.", file=stderr())
-    quit(save = "no", status = 1, runLast = FALSE)
-})
-
-# If not log transformed, do the log2 transformed
-if (scalable(X)) {
-    X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
-    X <- log2(X)
-}
-
-if (isdebug) print("DGEA: Data Preprocessed!")
 
 #############################################################################
 #                        Two Population Preparation                         #
 #############################################################################
 
 # Phenotype Selection
-pclass           <- pData(eset)[factor.type]
+pclass           <- pData[factor.type]
 colnames(pclass) <- "factor.type"
 
 # Create a data frame with the factors
