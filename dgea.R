@@ -3,7 +3,7 @@
 # Filename      : DGEA.R                                   #
 # Authors       : IsmailM, Nazrath, Suresh, Marian, Anisa  #
 # Description   : Differential Gene Expression Analysis    #
-# Rscript dgea.R --accession GDS5093 --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Volcano,PCA,Heatmap" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow TRUE --dendcol TRUE --adjmethod fdr --dev TRUE
+# Rscript dgea.R --dbrdata ~/Desktop/GDS5093.rData --rundir ~/Desktop/ --factor "disease.state" --popA "Dengue Hemorrhagic Fever,Convalescent,Dengue Fever" --popB "healthy control" --popname1 "Dengue" --popname2 "Normal" --analyse "Volcano,PCA,Heatmap" --topgenecount 250 --foldchange 0.0 --thresholdvalue 0.005 --distance "euclidean" --clustering "average" --clusterby "Complete" --heatmaprows 100 --dendrow --dendcol --adjmethod fdr --dev
 # ---------------------------------------------------------#
 
 #############################################################################
@@ -41,12 +41,10 @@ parser <- add_argument(parser, "--analyse", nargs = "+",
                        help = "List of analysis to be performed")
 parser <- add_argument(parser, "--geodbpath",
                        help = "GEO Dataset full path")
-parser <- add_argument(parser, "--dev",
-                       help = "The output directory where graphs get saved")
+parser <- add_argument(parser, "--dev", flag = TRUE, short = '-d',
+                       help = "verbose version")
 
 # Sample Parameters
-parser <- add_argument(parser, "--accession",
-                       help = "Accession Number of the GEO Database")
 parser <- add_argument(parser, "--factor",
                        help = "Factor type to be classified by")
 parser <- add_argument(parser, "--popA", nargs = "+",
@@ -67,10 +65,10 @@ parser <- add_argument(parser, "--adjmethod",
 # Heatmap
 parser <- add_argument(parser, "--heatmaprows",
                        help = "Number of genes show in the heatmap")
-parser <- add_argument(parser, "--dendrow",
-                       help = "Boolean value for display dendogram for Genes")
-parser <- add_argument(parser, "--dendcol",
-                       help = "Boolean value for display dendogram for Samples")
+parser <- add_argument(parser, "--dendrow", flag = TRUE,
+                       help = "Flag to display dendogram for Genes")
+parser <- add_argument(parser, "--dendcol", flag = TRUE,
+                       help = "Flag to display dendogram for Samples")
 parser <- add_argument(parser, "--clusterby",
                        help = "Cluster by complete dataset or toptable")
 # Clustering
@@ -95,36 +93,32 @@ split_arg <- function(vector_arg) {
   pos <- unlist(gregexpr("[^\\\\],", vector_arg, perl=TRUE))
   vect <- substring(vector_arg, c(1, pos+2), c(pos, nchar(vector_arg)))
   vect <- gsub("\\\\,", ",", vect) # replace \\, with ,
-  vect <- gsub("\\\"", '"', vect) #replace \" with "
+  vect <- gsub("\\\"", '"', vect)  # replace \" with "
   vect <- gsub('\\\\-', '-', vect) # replace \\- with -
   return (vect)
 }
 
 # General Parameters
-run.dir         <- argv$rundir
-dbrdata         <- argv$dbrdata
-analysis.list   <- split_arg(argv$analyse)
+run.dir       <- argv$rundir
+dbrdata       <- argv$dbrdata
+analysis.list <- split_arg(argv$analyse)
+isdebug       <- argv$dev
 
 # Sample Parameters
-accession       <- argv$accession
-factor.type     <- argv$factor
-population1     <- split_arg(argv$popA)
-population2     <- split_arg(argv$popB)
-pop.name1       <- argv$popname1
-pop.name2       <- argv$popname2
-pop.colour1     <- "#b71c1c"  # Red
-pop.colour2     <- "#0d47a1"  # Blue
+factor.type   <- argv$factor
+population1   <- split_arg(argv$popA)
+population2   <- split_arg(argv$popB)
+pop.name1     <- argv$popname1
+pop.name2     <- argv$popname2
+pop.colour1   <- "#b71c1c"  # Red
+pop.colour2   <- "#0d47a1"  # Blue
 
 # Toptable
-topgene.count     <- as.numeric(argv$topgenecount)
-toptable.sortby   <- "p"
-adjmethod_options <- c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY",
-                       "fdr", "none")
-if (argv$adjmethod %in% adjmethod_options) {
-  adj.method <- argv$adjmethod
-} else {
-  adj.method <- "fdr"
-}
+topgene.count   <- as.numeric(argv$topgenecount)
+toptable.sortby <- "p"
+adjmethod_opt   <- c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY",
+                     "fdr", "none")
+adj.method <- ifelse(argv$adjmethod %in% adjmethod_opt, argv$adjmethod, "fdr")
 
 # Heatmap
 heatmap.rows <- as.numeric(argv$heatmaprows)
@@ -133,31 +127,18 @@ dendcol      <- as.logical(argv$dendcol)
 cluster.by   <- argv$clusterby
 
 # Clustering
-distance_options <- c("euclidean", "maximum", "manhattan", "canberra",
-                      "binary", "minkowski")
-if (argv$distance %in% distance_options){
-  dist.method <- argv$distance
-} else {
-  dist.method <- "euclidean"
-}
+dist.opt     <- c("euclidean", "maximum", "manhattan", "canberra", "binary",
+                  "minkowski")
+dist.method  <- ifelse(argv$distance %in% dist.opt, argv$distance, "euclidean")
 
-clustering_options <- c("ward.D", "ward.D2", "single", "complete", "average",
-                        "mcquitty", "median", "centroid")
-if (argv$clustering %in% clustering_options){
-  clust.method <- argv$clustering
-} else {
-  clust.method <- "average"
-}
+clust.opt    <- c("ward.D", "ward.D2", "single", "complete", "average",
+                  "mcquitty", "median", "centroid")
+clust.method <- ifelse(argv$clustering %in% clust.opt, argv$clustering,
+                       "average")
 
 # Volcano plot Parameters
 fold.change     <- as.numeric(argv$foldchange)
 threshold.value <- as.numeric(argv$thresholdvalue)
-
-if (!is.na(argv$dev)) {
-  isdebug <- argv$dev
-} else {
-  isdebug <- FALSE
-}
 
 #############################################################################
 #                          Load Functions                                   #
@@ -171,9 +152,9 @@ check.run.dir <- function(run.dir) {
 }
 
 # Calculate Outliers Probabilities/ Dissimilarities
-outlier.probability <- function(X, dist.method = "euclidean", clust.method = "average"){
-
- # Rank outliers using distance and clustering parameters
+outlier.probability <- function(X, dist.method = "euclidean",
+                                clust.method = "average") {
+  # Rank outliers using distance and clustering parameters
   o <- outliers.ranking(t(X),test.data = NULL, method.pars = NULL,
                         method = "sizeDiff", # Outlier finding method
                         clus = list(dist = dist.method,
@@ -183,12 +164,10 @@ outlier.probability <- function(X, dist.method = "euclidean", clust.method = "av
   return(o$prob.outliers)
 }
 
-find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
+find.toptable <- function(X, newpclass, toptable.sortby, topgene.count) {
+  design  <- model.matrix(~0 + newpclass)  # creates a design (or model) matrix
 
-  # creates a design (or model) matrix
-  design  <- model.matrix(~0 + newpclass)
-
-  # plots linear model for each gene and estimate fold changes and standard errors
+  # plots linear model for each gene and estimate fold changes + standard errors
   fit     <- lmFit(X, design)
 
   # set contrasts for two groups
@@ -201,9 +180,9 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
   fit <- eBayes(fit, proportion = 0.01)
 
   # create top Table
-  toptable <- topTable(fit, adjust.method = adj.method, sort.by = toptable.sortby,
-                       number = topgene.count)
-  if(isdebug){
+  toptable <- topTable(fit, adjust.method = adj.method,
+                       sort.by = toptable.sortby, number = topgene.count)
+  if (isdebug) {
     print(paste("DGEA: TopTable has been produced",
           "for", topgene.count, "genes with the cut-off method:", adj.method))
   }
@@ -211,30 +190,32 @@ find.toptable <- function(X, newpclass, toptable.sortby, topgene.count){
 }
 
 # Heatmap
-heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
-                    dist.method, clust.method, path){
-
+heatmap <- function(X.matrix, X, exp, heatmap.rows = 100, dendogram.row, dendogram.col,
+                    dist.method, clust.method, path) {
   col.pal <- colorRampPalette(rev(RColorBrewer::brewer.pal(11, "RdYlGn")))(100)
 
   # Annotation column for samples
   ann.col <- data.frame(Population = exp[, "population"])
 
    # If there are only few factor levels, then only show colour annotations
-  if(length(levels(exp[, "factor.type"])) < 10){
-      ann.col$Factor <- exp[, "factor.type"]
-      colnames(ann.col) <- c("Population", factor.type)
+  if (length(levels(exp[, "factor.type"])) < 10) {
+    ann.col$Factor    <- exp[, "factor.type"]
+    colnames(ann.col) <- c("Population", factor.type)
   }
 
   # Clustering based on complete dataset or only toptable data
-  if (cluster.by == "Complete"){
-      exp.data <- X
-  }else{
-      exp.data <- X.matix
+  if (cluster.by == "Complete") {
+    exp.data <- X
+  } else {
+    exp.data <- X.matrix
   }
 
   # Column dendogram
-  if (dendogram.col == TRUE){
-
+  if (dendogram.col != TRUE) {
+    hc <- FALSE
+    # Keep a gap between two groups
+    column.gap <- length( (which(ann.col[, "Population"] == "Group1") == T) )
+  } else {
     # calculate heirachical clustering
     hc <- hclust(dist(t(exp.data), method = dist.method), method = clust.method)
 
@@ -243,24 +224,16 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 
     # Add dissimilarity annotation to the samples annotation
     ann.col$Dissimilarity <- outliers
-
     column.gap <- 0
-
-  } else {
-
-    hc <- FALSE
-
-    # Keep a gap between two groups
-    column.gap <- length( (which(ann.col[, "Population"] == "Group1") == T) )
   }
 
   rownames(ann.col) <- exp[, "Sample"]
 
   # Limit no of heatmap rows
-  if(nrow(X.matix) < heatmap.rows){
-      hdata <- X.matix                    # Show all
-  }else{
-      hdata <- X.matix[1:heatmap.rows, ]  # Limit to user specified limit
+  if (nrow(X.matrix) < heatmap.rows) {
+    hdata <- X.matrix
+  } else {
+    hdata <- X.matrix[1:heatmap.rows, ]
   }
 
   filename <- file.path(path, "dgea_heatmap.svg")
@@ -286,10 +259,11 @@ heatmap <- function(X.matix, X, exp, heatmap.rows = 100, dendogram.row, dendogra
 }
 
 # Apply Bonferroni cut-off as the default thresold value
-# fold.change and threshold value are not used to find significant gene. But it kept
-# remain as there is a plan to extend the functionality with those two parameters.
-volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), path){
-
+# fold.change and threshold value are no longer used to find significant gene. 
+# But the necessary code is left due to plans to extend the functionality with
+# those thwo parameters.
+volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names),
+                        path) {
   # Select only genes which are in toptable
   toptable$Significant <- c(rep(TRUE,topgene.count),
                             rep(FALSE,length(toptable$ID) - topgene.count))
@@ -302,16 +276,16 @@ volcanoplot <- function(toptable, fold.change, t = 0.05 / length(gene.names), pa
   filename <- file.path(path, "dgea_volcano.png")
   ggsave(filename, plot = vol, height = 6, width = 6)
 
-  if(isdebug){
+  if (isdebug) {
     print(paste("DGEA: Volcanoplot has been produced",
-          "for a foldchange of:", fold.change, "and threshold of:", threshold.value))
+          "with a foldchange of:", fold.change, "and threshold of:", threshold.value))
   }
 }
 
-get.volcanodata <- function(toptable){
-  vol.list <- list( genes = toptable$ID,
-                    logFC = round(toptable$logFC, 3),
-                    pVal  = -log10(toptable$P.Value))
+get.volcanodata <- function(toptable) {
+  vol.list <- list(genes = toptable$ID,
+                   logFC = round(toptable$logFC, 3),
+                   pVal  = -log10(toptable$P.Value))
   return(vol.list)
 }
 
@@ -319,8 +293,8 @@ get.volcanodata <- function(toptable){
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 
-if (file.exists(dbrdata)){
-  if(isdebug) print("DGEA: Loading Database data.")
+if (file.exists(dbrdata)) {
+  if (isdebug) print("DGEA: Loading Database data.")
   load(file = dbrdata)
 } else {
   cat("ERROR: Data input error. Provide valid GDS dataset!", file=stderr())
@@ -366,8 +340,8 @@ data <- within(melt(X), {
 })
 
 # Created a new Phenotype class
-newpclass           <- expression.info$population
-names(newpclass)    <- expression.info$Sample
+newpclass        <- expression.info$population
+names(newpclass) <- expression.info$Sample
 
 if (isdebug) print("DGEA: Factors and Populations have been set")
 
@@ -397,29 +371,26 @@ save(X.toptable, expression.info, file = filename)
 filename <- file.path(run.dir, "dgea_toptable.tsv")
 write.table(toptable, filename, col.names=NA, sep = "\t" )
 
-if(isdebug) print(paste("DGEA: Analysis to be performed:", argv$analyse))
+if (isdebug) print(paste("DGEA: Analysis to be performed:", argv$analyse))
 
+if ("Volcano" %in% analysis.list) {
+  # Get data for volcanoplot
+  toptable.all <- find.toptable(X, newpclass, toptable.sortby,
+                                length(gene.names))
+  # Draw volcano plit
+  volcanoplot(toptable.all, fold.change, threshold.value, run.dir)
 
-if ("Volcano" %in% analysis.list){
-    # Get data for volcanoplot
-    toptable.all <- find.toptable(X, newpclass, toptable.sortby,
-                                  length(gene.names))
-    # Draw volcano plit
-    volcanoplot(toptable.all, fold.change, threshold.value, run.dir)
-
-    # save volcanoplot top data as JSON
-    volcanoplot.data <- get.volcanodata(toptable)
-    json.list <- append(json.list, list(vol = volcanoplot.data))
+  # save volcanoplot top data as JSON
+  volcanoplot.data <- get.volcanodata(toptable)
+  json.list        <- append(json.list, list(vol = volcanoplot.data))
 }
 
-if ("Heatmap" %in% analysis.list){
-
-    heatmap(X.toptable,X, expression.info, heatmap.rows = heatmap.rows,
-            dendrow, dendcol, dist.method, clust.method, run.dir)
+if ("Heatmap" %in% analysis.list) {
+  heatmap(X.toptable,X, expression.info, heatmap.rows = heatmap.rows, dendrow,
+          dendcol, dist.method, clust.method, run.dir)
 }
 
-if (length(json.list) != 0){
-    # Write to a json file with 4 decimal places
-    filename <- file.path(run.dir, "dgea_data.json")
-    write(toJSON(json.list, digits=I(4)), filename )
+if (length(json.list) != 0) {
+  filename <- file.path(run.dir, "dgea_data.json")
+  write(toJSON(json.list, digits=I(4)), filename) # 4 decimal places
 }

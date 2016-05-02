@@ -39,12 +39,10 @@ parser <- add_argument(parser, "--analyse", nargs = "+",
                        help = "List of analysis to be performed")
 parser <- add_argument(parser, "--geodbpath",
                        help = "GEO Dataset full path")
-parser <- add_argument(parser, "--dev",
-                       help = "Debug Mode")
+parser <- add_argument(parser, "--dev", flag = TRUE, short = '-d',
+                       help = "verbose version")
 
 # Sample Parameters
-parser <- add_argument(parser, "--accession",
-                       help = "Accession Number of the GEO Database")
 parser <- add_argument(parser, "--factor",
                        help = "Factor type to be classified by")
 parser <- add_argument(parser, "--popA", nargs = "+",
@@ -63,10 +61,10 @@ argv   <- parse_args(parser)
 #                        Command Line Arguments Retrieval                   #
 #############################################################################
 split_arg <- function(vector_arg) {
-  pos <- unlist(gregexpr("[^\\\\],", vector_arg, perl=TRUE))
+  pos  <- unlist(gregexpr("[^\\\\],", vector_arg, perl=TRUE))
   vect <- substring(vector_arg, c(1, pos+2), c(pos, nchar(vector_arg)))
   vect <- gsub("\\\\,", ",", vect) # replace \\, with ,
-  vect <- gsub("\\\"", '"', vect) #replace \" with "
+  vect <- gsub("\\\"", '"', vect) # replace \" with "
   vect <- gsub('\\\\-', '-', vect) # replace \\- with -
   return (vect)
 }
@@ -85,11 +83,7 @@ pop.name2       <- argv$popname2
 pop.colour1     <- "#e199ff" # Purple
 pop.colour2     <- "#96ca00" # Green
 
-if (!is.na(argv$dev)) {
-  isdebug <- argv$dev
-} else {
-  isdebug <- FALSE
-}
+isdebug <- argv$dev
 
 #############################################################################
 #                          Load Functions                                   #
@@ -103,8 +97,7 @@ check.run.dir <- function(run.dir) {
 }
 
 # Boxplot
-samples.boxplot <- function(data, pop.colours, pop.names, path){
-
+samples.boxplot <- function(data, pop.colours, pop.names, path) {
   boxplot <- ggplot(data) + geom_boxplot(aes(x = Var2, y = value, colour = Groups), outlier.shape = NA) + theme(axis.text.x = element_text(angle = 70, hjust = 1), legend.position = "right")+ labs(x = "Samples", y = "Expression Levels") + scale_color_manual(name = "Groups", values = pop.colours, labels = pop.names)
 
   # compute lower and upper whiskers to set the y axis margin
@@ -120,7 +113,7 @@ samples.boxplot <- function(data, pop.colours, pop.names, path){
 }
 
 # Principal Component Analysis
-get.pcdata <- function(Xpca){
+get.pcdata <- function(Xpca) {
   s <- summary(Xpca)
 
   exp.var <- s$importance[2, ] * 100 # Explained Variance in percentages
@@ -135,13 +128,11 @@ get.pcdata <- function(Xpca){
   return(results)
 }
 
-get.pcplotdata <- function(Xpca, populations){
-
-  Xscores <- Xpca$x
-
-  sample.names <- rownames(Xscores)
+get.pcplotdata <- function(Xpca, populations) {
+  Xscores           <- Xpca$x
+  sample.names      <- rownames(Xscores)
   rownames(Xscores) <- NULL
-  cols <- colnames(Xscores)
+  cols              <- colnames(Xscores)
 
   # Take each column of Xscore (as temp variable y) and split based on the population
   Xscores <- lapply(1:nrow(Xscores),
@@ -149,10 +140,10 @@ get.pcplotdata <- function(Xpca, populations){
   names(Xscores) <- cols
 
   # Unlist them but not to the dept. outer most list has unlisted
-  pc <- unlist(Xscores, recursive = FALSE)
+  pc             <- unlist(Xscores, recursive = FALSE)
 
   # Split sample names by population and add to the final list
-  complete.data <- c(split(sample.names, populations),pc)
+  complete.data  <- c(split(sample.names, populations),pc)
 
   if (isdebug) print("Overview: PCA has been calculated")
   return(complete.data)
@@ -163,8 +154,8 @@ get.pcplotdata <- function(Xpca, populations){
 #                        Load GEO Dataset to Start Analysis                 #
 #############################################################################
 
-if (file.exists(dbrdata)){
-  if(isdebug) print("Overview: Loading Database data.")
+if (file.exists(dbrdata)) {
+  if (isdebug) print("Overview: Loading Database data.")
   load(file = dbrdata)
 } else {
   cat("ERROR: Data input error. Provide valid GDS dataset!", file=stderr())
@@ -216,24 +207,18 @@ if (isdebug) print("Overview: Factors and Populations have been set")
 
 json.list <- list()
 
-if ("Boxplot" %in% analysis.list){
+if ("Boxplot" %in% analysis.list) {
   samples.boxplot(data, c(pop.colour2, pop.colour1),
                   c(pop.name2, pop.name1), path = run.dir)
 }
 
-if ("PCA" %in% analysis.list){
-
-  Xpca <- prcomp(t(X))
-
-  # PC individual and cumulative values
-  pcdata <- get.pcdata(Xpca)
-  json.list <- append(json.list, list(pc = pcdata))
-
+if ("PCA" %in% analysis.list) {
+  Xpca       <- prcomp(t(X))
+  pcdata     <- get.pcdata(Xpca) # PC individual and cumulative values
+  json.list  <- append(json.list, list(pc = pcdata))
   # PC scatter plot
   pcplotdata <- get.pcplotdata(Xpca, expression.info[, "population"])
-
-  # adding both data to the json list
-  json.list <- append(json.list, list(pcdata = pcplotdata))
+  json.list  <- append(json.list, list(pcdata = pcplotdata)) # add to json list
 }
 
 if (length(json.list) != 0) {

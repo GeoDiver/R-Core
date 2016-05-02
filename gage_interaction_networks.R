@@ -40,8 +40,8 @@ argv <- parse_args(parser)
 #############################################################################
 
 # General Parameters
-run.dir          <- argv$rundir
-pathid          <- argv$pathid
+run.dir <- argv$rundir
+pathid  <- argv$pathid
 
 # Check if the run directory exists and if not, exit...
 if (!dir.exists(file.path(run.dir))) {
@@ -55,33 +55,30 @@ if (!dir.exists(file.path(run.dir))) {
 
 filename <- file.path(run.dir, "gage.RData")
 
-if (file.exists(filename)){
-    load(file = filename)
-    if(geneset.type != "KEGG"){
-      cat("ERROR: Interaction Network supports only for KEGG Database.", file=stderr())
-      quit(save = "no", status = 1, runLast = FALSE)
-    }
-}else {
+if (file.exists(filename)) {
+  load(file = filename)
+  if (geneset.type != "KEGG") {
+    cat("ERROR: Interaction Network supports only for KEGG Database.", file=stderr())
+    quit(save = "no", status = 1, runLast = FALSE)
+  }
+} else {
   cat("ERROR: Gage Rdata file not found.", file=stderr())
   quit(save = "no", status = 1, runLast = FALSE)
 }
-
 
 #############################################################################
 #                          Interaction Networks                             #
 #############################################################################
 
-if(analysis.type == "ExpVsCtrl"){
-
-    #Find expression change between experimental group and control
+if (analysis.type == "ExpVsCtrl") {
+    # Find expression change between experimental group and control
     GEOdataset.diff<-geo.dataset[, Group1] - rowMeans(geo.dataset[, Group2])
 
     # Save png and xml files in current working directory
     pathview(gene.data = GEOdataset.diff[, 1:2], pathway.id = pathid,
              species = keggcode.organism, out.suffix = "gage_pathway")
 
-}else if(analysis.type =="ExpVsExp"){
-
+} else if (analysis.type =="ExpVsExp") {
     # Interaction pathways for experimental group 1
     pathview(gene.data = geo.dataset[, Group1names][, 1:2], pathway.id = pathid,
              species = keggcode.organism, out.suffix = "gage_pathway")
@@ -89,5 +86,4 @@ if(analysis.type == "ExpVsCtrl"){
     # Interaction pathways for experimental group 2
     pathview(gene.data = geo.dataset[, Group2names][, 1:2], pathway.id = pathid,
              species = keggcode.organism, out.suffix = "gage_pathway")
-
 }

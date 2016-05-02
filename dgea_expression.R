@@ -35,7 +35,7 @@ if (!dir.exists(file.path(argv$rundir))) {
 
 filename <- file.path(argv$rundir,"dgea_toptable.RData")
 
-if (file.exists(filename)){
+if (file.exists(filename)) {
   load(file = filename)
 } else {
   cat("ERROR: DGEA Toptable RData file not found.", file=stderr())

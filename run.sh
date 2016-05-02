@@ -5,7 +5,6 @@
 ACCESSION='GDS5093'
 OUTRDATA='analysis/'
 FACTOR="disease.state"
-DEGUB_MODE=TRUE
 
 POPULATION_A="Dengue Hemorrhagic Fever,Convalescent,Dengue Fever"
 POPULATION_B="healthy control"
@@ -18,8 +17,6 @@ TOPGENE_NO=250
 FOLD_CHANGE=0.0
 THRESHOLD_VALUE=0.005 
 HEATMAP_ROWS=100
-DENDOGRAM_ROWS=TRUE
-DENDOGRAM_COLUMNS=TRUE
 ADJUSTMENT_METHOD=fdr
 
 GENE_ID=LOC100288410
@@ -48,6 +45,7 @@ mkdir $OUTRDATA
 #### download_GEO.R
 ##############################
 ## Download and store R data script
+echo Rscript download_GEO.R --accession "$ACCESSION" --outrdata $OUTRDATA/$ACCESSION.RData
 Rscript download_GEO.R --accession "$ACCESSION" --outrdata $OUTRDATA/$ACCESSION.RData
 check_if_file_exists $OUTRDATA/$ACCESSION.RData
 echo
@@ -58,8 +56,8 @@ echo
 ##############################
 #### Overview.R
 ##############################
-echo Rscript overview.R --accession "$ACCESSION" --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor $FACTOR --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --dev "$DEGUB_MODE"
-Rscript overview.R --accession "$ACCESSION" --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor $FACTOR --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --dev "$DEGUB_MODE"
+echo Rscript overview.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor $FACTOR --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --dev
+Rscript overview.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor $FACTOR --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --dev
 echo
 echo "## Verifying Output"
 check_if_file_exists $OUTRDATA/boxplot.png
@@ -73,8 +71,8 @@ echo
 ##############################
 #### dgea.R
 ##############################
-echo Rscript dgea.R --accession "$ACCESSION" --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor "$FACTOR" --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --topgenecount "$TOPGENE_NO" --foldchange "$FOLD_CHANGE" --thresholdvalue "$THRESHOLD_VALUE" --distance "$DISTANCE_METHOD" --clustering "$CLUSTERING_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow "$DENDOGRAM_ROWS" --dendcol "$DENDOGRAM_COLUMNS" --adjmethod "$ADJUSTMENT_METHOD" --dev "$DEGUB_MODE"
-Rscript dgea.R --accession "$ACCESSION" --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor "$FACTOR" --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --topgenecount "$TOPGENE_NO" --foldchange "$FOLD_CHANGE" --thresholdvalue "$THRESHOLD_VALUE" --distance "$DISTANCE_METHOD" --clustering "$CLUSTERING_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow "$DENDOGRAM_ROWS" --dendcol "$DENDOGRAM_COLUMNS" --adjmethod "$ADJUSTMENT_METHOD" --dev "$DEGUB_MODE"
+echo Rscript dgea.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor "$FACTOR" --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --topgenecount "$TOPGENE_NO" --foldchange "$FOLD_CHANGE" --thresholdvalue "$THRESHOLD_VALUE" --distance "$DISTANCE_METHOD" --clustering "$CLUSTERING_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow --dendcol --adjmethod "$ADJUSTMENT_METHOD" --dev
+Rscript dgea.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --factor "$FACTOR" --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME" --analyse "$ANALYSIS_LIST" --topgenecount "$TOPGENE_NO" --foldchange "$FOLD_CHANGE" --thresholdvalue "$THRESHOLD_VALUE" --distance "$DISTANCE_METHOD" --clustering "$CLUSTERING_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow --dendcol --adjmethod "$ADJUSTMENT_METHOD" --dev
 echo
 echo "## Verifying Output"
 check_if_file_exists $OUTRDATA/dgea_data.json
@@ -105,8 +103,8 @@ echo
 ##############################
 #### gage.R
 ##############################
-echo Rscript gage.R --accession "$ACCESSION" --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA/" --factor "$FACTOR" --popA "$POPULATION_A"  --popB "$POPULATION_B" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "$DISTANCE_METHOD" --clustering "$DISTANCE_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow "$DENDOGRAM_ROWS" --dendcol "$DENDOGRAM_COLUMNS" --dev "$DEGUB_MODE"
-Rscript gage.R --accession "$ACCESSION" --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA/" --factor "$FACTOR" --popA "$POPULATION_A"  --popB "$POPULATION_B" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "$DISTANCE_METHOD" --clustering "$DISTANCE_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow "$DENDOGRAM_ROWS" --dendcol "$DENDOGRAM_COLUMNS" --dev "$DEGUB_MODE"
+echo Rscript gage.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA/" --factor "$FACTOR" --popA "$POPULATION_A"  --popB "$POPULATION_B" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "$DISTANCE_METHOD" --clustering "$DISTANCE_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow --dendcol --dev
+Rscript gage.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA/" --factor "$FACTOR" --popA "$POPULATION_A"  --popB "$POPULATION_B" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "$DISTANCE_METHOD" --clustering "$DISTANCE_METHOD" --clusterby "$CLUSTER_BY" --heatmaprows "$HEATMAP_ROWS" --dendrow --dendcol --dev
 echo
 echo "## Verifying Output"
 check_if_file_exists $OUTRDATA/gage_data.json
