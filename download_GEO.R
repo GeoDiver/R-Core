@@ -23,7 +23,7 @@ parser <- add_argument(parser, "--geodbpath",
                        help = "GEO Dataset full path")
 parser <- add_argument(parser, "--accession", default = "GDS5093",
                        help = "Accession Number of the GEO Database")
-parser <- add_argument(parser, "--outrdata",
+parser <- add_argument(parser, "--outrdata", default = "GDS5093.RData",
                        help = "Full path to the output rData file")
 argv   <- parse_args(parser)
 
@@ -46,18 +46,25 @@ scalable <- function(X) {
 #############################################################################
 
 if (is.na(argv$geodbpath)) {
-  gse <- getGEO(argv$accession, GSEMatrix = TRUE)
+  gset <- getGEO(argv$accession, GSEMatrix = TRUE)
 } else {
-  gse <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
+  gset <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
 }
-eset        <- GDS2eSet(gse, do.log2 = FALSE)
+
+if (grepl('^GDS', argv$accession)) {
+  eset       <- GDS2eSet(gset, do.log2 = FALSE)
+  gene.names <- as.character(gset@dataTable@table$IDENTIFIER)
+  organism   <- as.character(Meta(gset)$sample_organism)
+} else if (grepl('^GSE', argv$accession)) {
+  if (length(gset) > 1) idx <- grep(gset@annotation, attr(gse, "names")) else idx <- 1
+  eset       <- gset[[idx]]
+  gene.names <- as.character(eset@featureData@data[, "Gene Symbol"])
+  organism   <- as.character(eset@featureData@data[, "Species Scientific Name"][1])
+}
+
+X           <- exprs(eset) # Get Expression Data
 pData       <- pData(eset)
-
-X           <- exprs(eset)  # Get Expression Data
-gene.names  <- as.character(gse@dataTable@table$IDENTIFIER)
 rownames(X) <- gene.names
-
-organism <- as.character(Meta(gse)$sample_organism)
 
 # KNN imputation
 if (ncol(X) == 2) {
