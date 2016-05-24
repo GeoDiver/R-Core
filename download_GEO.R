@@ -21,9 +21,9 @@ suppressMessages(library("impute"))
 parser <- arg_parser("Input GEO Dataset")
 parser <- add_argument(parser, "--geodbpath",
                        help = "GEO Dataset full path")
-parser <- add_argument(parser, "--accession", default = "GDS5093",
+parser <- add_argument(parser, "--accession", default = "GSE51808",
                        help = "Accession Number of the GEO Database")
-parser <- add_argument(parser, "--outrdata", default = "GDS5093.RData",
+parser <- add_argument(parser, "--outrdata", default = "GSE51808.RData",
                        help = "Full path to the output rData file")
 argv   <- parse_args(parser)
 
@@ -52,19 +52,30 @@ if (is.na(argv$geodbpath)) {
 }
 
 if (grepl('^GDS', argv$accession)) {
-  eset       <- GDS2eSet(gset, do.log2 = FALSE)
-  gene.names <- as.character(gset@dataTable@table$IDENTIFIER)
-  organism   <- as.character(Meta(gset)$sample_organism)
+  eset           <- GDS2eSet(gset, do.log2 = FALSE)
+  gene.names     <- as.character(gset@dataTable@table$IDENTIFIER)
+  organism       <- as.character(Meta(gset)$sample_organism)
+  gpl            <- getGEO(Meta(gset)$platform)
+  featureData    <- gpl@dataTable@table
 } else if (grepl('^GSE', argv$accession)) {
   if (length(gset) > 1) idx <- grep(gset@annotation, attr(gse, "names")) else idx <- 1
-  eset       <- gset[[idx]]
-  gene.names <- as.character(eset@featureData@data[, "Gene Symbol"])
-  organism   <- as.character(eset@featureData@data[, "Species Scientific Name"][1])
+  eset           <- gset[[idx]]
+  gene.names     <- as.character(eset@featureData@data[, "Gene Symbol"])
+  organism       <- as.character(eset@featureData@data[, "Species Scientific Name"][1])
+  featureData    <- eset@featureData@data
 }
 
 X           <- exprs(eset) # Get Expression Data
 pData       <- pData(eset)
 rownames(X) <- gene.names
+
+entrez.gene.id <- featureData[, 'ENTREZ_GENE_ID']
+go.bio         <- featureData[, 'Gene Ontology Biological Process']
+go.cell        <- featureData[, 'Gene Ontology Cellular Component']
+go.mol         <- featureData[, 'Gene Ontology Molecular Function']
+gene.titles    <- featureData[, 'Gene Title']
+genes          <- data.frame(gene.names, entrez.gene.id, gene.titles, go.bio,
+                             go.cell, go.mol)
 
 # KNN imputation
 if (ncol(X) == 2) {
