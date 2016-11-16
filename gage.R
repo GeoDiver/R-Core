@@ -340,24 +340,9 @@ data(korg)
 
 # Retrieve KEGG code and package for the organism
 keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
-package <-as.character(bods[which(bods[, "kegg code"] == keggcode.organism), "package"])
-
-# Create two column table containing entrez IDs for geodataset
-id.map.refseq <- id2eg(ids =  gene.names, category = "SYMBOL",
-                       pkg.name = package, org = as.character(keggcode.organism))
-
-# Replace gene symbols with ENTREZ ID in dataset matrix
-tryCatch({
-  rownames(X) <- id.map.refseq[, 2]
-}, error = function(e) {
-  cat("ERROR: Gene symbols does not match with ENTREZ ID", file=stderr())
-  quit(save = "no", status = 1, runLast = FALSE)
-})
-
-# Remove rows without ENTREZ IDs
-X <- X[which(is.na(rownames(X)) == FALSE), ]
 
 geo.dataset <- X
+rownames(geo.dataset) <- entrez.gene.id
 
 if (isdebug) print("GAGE: Data Preparation completed")
 

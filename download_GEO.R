@@ -70,12 +70,12 @@ pData       <- pData(eset)
 rownames(X) <- gene.names
 
 entrez.gene.id <- featureData[, 'ENTREZ_GENE_ID']
-go.bio         <- featureData[, 'Gene Ontology Biological Process']
-go.cell        <- featureData[, 'Gene Ontology Cellular Component']
-go.mol         <- featureData[, 'Gene Ontology Molecular Function']
-gene.titles    <- featureData[, 'Gene Title']
-genes          <- data.frame(gene.names, entrez.gene.id, gene.titles, go.bio,
-                             go.cell, go.mol)
+# go.bio         <- featureData[, 'Gene Ontology Biological Process']
+# go.cell        <- featureData[, 'Gene Ontology Cellular Component']
+# go.mol         <- featureData[, 'Gene Ontology Molecular Function']
+# gene.titles    <- featureData[, 'Gene Title']
+# genes          <- data.frame(gene.names, entrez.gene.id, gene.titles, go.bio,
+                             # go.cell, go.mol)
 
 # KNN imputation
 if (ncol(X) == 2) {
@@ -100,5 +100,5 @@ if (scalable(X)) {
 }
 
 if (! is.na(argv$outrdata)) {
-  save(X, pData, gene.names, organism, file = argv$outrdata)
+  save(X, pData, gene.names, organism, entrez.gene.id, file = argv$outrdata)
 }
