@@ -25,6 +25,8 @@ parser <- add_argument(parser, "--accession", default = "GSE51808",
                        help = "Accession Number of the GEO Database")
 parser <- add_argument(parser, "--outrdata", default = "GSE51808.RData",
                        help = "Full path to the output rData file")
+parser <- add_argument(parser, "--dbDir", default = ".",
+                       help = "Full path to the database directory")
 argv   <- parse_args(parser)
 
 #############################################################################
@@ -46,9 +48,9 @@ scalable <- function(X) {
 #############################################################################
 
 if (is.na(argv$geodbpath)) {
-  gset <- getGEO(argv$accession, GSEMatrix = TRUE)
+  gset <- getGEO(argv$accession, GSEMatrix = TRUE, destdir=argv$dbDir)
 } else {
-  gset <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE)
+  gset <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE, AnnotGPL=TRUE)
 }
 
 if (grepl('^GDS', argv$accession)) {
@@ -70,12 +72,6 @@ pData       <- pData(eset)
 rownames(X) <- gene.names
 
 entrez.gene.id <- featureData[, 'ENTREZ_GENE_ID']
-# go.bio         <- featureData[, 'Gene Ontology Biological Process']
-# go.cell        <- featureData[, 'Gene Ontology Cellular Component']
-# go.mol         <- featureData[, 'Gene Ontology Molecular Function']
-# gene.titles    <- featureData[, 'Gene Title']
-# genes          <- data.frame(gene.names, entrez.gene.id, gene.titles, go.bio,
-                             # go.cell, go.mol)
 
 # KNN imputation
 if (ncol(X) == 2) {
