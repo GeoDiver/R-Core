@@ -45,8 +45,8 @@ mkdir $OUTRDATA
 #### download_GEO.R
 ##############################
 ## Download and store R data script
-echo Rscript download_GEO.R --accession "$ACCESSION" --outrdata $OUTRDATA/$ACCESSION.RData
-Rscript download_GEO.R --accession "$ACCESSION" --outrdata $OUTRDATA/$ACCESSION.RData
+echo Rscript download_GEO.R --accession "$ACCESSION" --outrdata $OUTRDATA/$ACCESSION.RData --geodbDir $OUTRDATA
+Rscript download_GEO.R --accession "$ACCESSION" --outrdata $OUTRDATA/$ACCESSION.RData --geodbDir $OUTRDATA
 check_if_file_exists $OUTRDATA/$ACCESSION.RData
 echo
 echo "###################"

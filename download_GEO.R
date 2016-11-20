@@ -19,13 +19,11 @@ suppressMessages(library("impute"))
 #############################################################################
 
 parser <- arg_parser("Input GEO Dataset")
-parser <- add_argument(parser, "--geodbpath",
-                       help = "GEO Dataset full path")
 parser <- add_argument(parser, "--accession", default = "GSE51808",
                        help = "Accession Number of the GEO Database")
 parser <- add_argument(parser, "--outrdata", default = "GSE51808.RData",
                        help = "Full path to the output rData file")
-parser <- add_argument(parser, "--dbDir", default = ".",
+parser <- add_argument(parser, "--geodbDir", default = ".",
                        help = "Full path to the database directory")
 argv   <- parse_args(parser)
 
@@ -47,11 +45,7 @@ scalable <- function(X) {
 #                        GEO Input                                          #
 #############################################################################
 
-if (is.na(argv$geodbpath)) {
-  gset <- getGEO(argv$accession, GSEMatrix = TRUE, destdir=argv$dbDir)
-} else {
-  gset <- getGEO(filename = argv$geodbpath, GSEMatrix = TRUE, AnnotGPL=TRUE)
-}
+gset <- getGEO(argv$accession, GSEMatrix = TRUE, destdir=argv$geodbDir)
 
 if (grepl('^GDS', argv$accession)) {
   eset           <- GDS2eSet(gset, do.log2 = FALSE)
