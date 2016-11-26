@@ -13,6 +13,10 @@
 suppressMessages(library("argparser"))
 suppressMessages(library("GEOquery"))
 suppressMessages(library("impute"))
+suppressMessages(library("pathview")) # for the id2eg function
+suppressMessages(library("org.Mm.eg.db"))  # Species database
+data(korg)
+data(bods)
 
 #############################################################################
 #                        Command Line Arguments                             #
@@ -51,7 +55,7 @@ if (grepl('^GDS', argv$accession)) {
   eset           <- GDS2eSet(gset, do.log2 = FALSE)
   gene.names     <- as.character(gset@dataTable@table$IDENTIFIER)
   organism       <- as.character(Meta(gset)$sample_organism)
-  gpl            <- getGEO(Meta(gset)$platform)
+  gpl            <- getGEO(Meta(gset)$platform, destdir=argv$geodbDir)
   featureData    <- gpl@dataTable@table
 } else if (grepl('^GSE', argv$accession)) {
   if (length(gset) > 1) idx <- grep(gset@annotation, attr(gse, "names")) else idx <- 1
@@ -61,11 +65,23 @@ if (grepl('^GDS', argv$accession)) {
   featureData    <- eset@featureData@data
 }
 
+# Retrieve scientific name for organism
+organism.scientific.name <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
+organism.common.name <- as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "species"])
+
+if (c('ENTREZ_GENE_ID') %in% names(featureData)) {
+  entrez.gene.id <- featureData[, 'ENTREZ_GENE_ID']
+} else {
+  package <-as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "package"])
+  # Create two column table containing entrez IDs for geodataset
+  entrez.id <- id2eg(ids =  gene.names, category = "SYMBOL", pkg.name = package, 
+                     org = as.character(organism.scientific.name))  
+  entrez.gene.id <- entrez.id[,2]
+}
+
 X           <- exprs(eset) # Get Expression Data
 pData       <- pData(eset)
 rownames(X) <- gene.names
-
-entrez.gene.id <- featureData[, 'ENTREZ_GENE_ID']
 
 # KNN imputation
 if (ncol(X) == 2) {
@@ -90,5 +106,5 @@ if (scalable(X)) {
 }
 
 if (! is.na(argv$outrdata)) {
-  save(X, pData, gene.names, organism, entrez.gene.id, file = argv$outrdata)
+  save(X, pData, gene.names, organism, organism.common.name, organism.scientific.name, entrez.gene.id, file = argv$outrdata)
 }

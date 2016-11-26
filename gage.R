@@ -270,7 +270,7 @@ gage.analysis <- function(set.type, analysis.type = "ExpVsCtrl", ref.group = G2,
     filename <- file.path(run.dir, "gage.RData")
     save( analysis.type, geo.dataset, analysis, geneset.type,
           Group1, Group1names, Group2, Group2names,
-          keggcode.organism, file = filename)
+          organism.scientific.name, file = filename)
     }
   }
 
@@ -334,13 +334,6 @@ if (isdebug) print("GAGE: Factors and Populations have been set")
 #                            Data Preparation                               #
 #############################################################################
 
-# Loading data on kegg packages and species
-data(bods)
-data(korg)
-
-# Retrieve KEGG code and package for the organism
-keggcode.organism <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
-
 geo.dataset <- X
 rownames(geo.dataset) <- entrez.gene.id
 
@@ -349,14 +342,13 @@ if (isdebug) print("GAGE: Data Preparation completed")
 #############################################################################
 #                          Gage  Data Loading                               #
 #############################################################################
-
+# Loading data on kegg packages and species
 if (geneset.type == "KEGG") { # KEGG datasets
   data(kegg.gs)
   kg.org <- kegg.gsets(organism)                 # picks out orgamism gene sets
   dbdata <- kg.org$kg.sets[kg.org$sigmet.idx]
 } else { # GO Datasets
-  common.name <- as.character(bods[which(bods[, "kegg code"] == keggcode.organism), "species"])
-  go.hs <- go.gsets(species = common.name)        # use species column of bods
+  go.hs <- go.gsets(species = organism.common.name)        # use species column of bods
   if (geneset.type == "BP") {                     # BP = Biological Process
     dbdata <- go.hs$go.sets[go.hs$go.subs$BP]
   } else if (geneset.type == "MF") {              # MF = molecular function

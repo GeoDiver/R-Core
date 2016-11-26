@@ -76,14 +76,14 @@ if (analysis.type == "ExpVsCtrl") {
 
     # Save png and xml files in current working directory
     pathview(gene.data = GEOdataset.diff[, 1:2], pathway.id = pathid,
-             species = keggcode.organism, out.suffix = "gage_pathway")
+             species = organism.scientific.name, out.suffix = "gage_pathway")
 
 } else if (analysis.type =="ExpVsExp") {
     # Interaction pathways for experimental group 1
     pathview(gene.data = geo.dataset[, Group1names][, 1:2], pathway.id = pathid,
-             species = keggcode.organism, out.suffix = "gage_pathway")
+             species = organism.scientific.name, out.suffix = "gage_pathway")
 
     # Interaction pathways for experimental group 2
     pathview(gene.data = geo.dataset[, Group2names][, 1:2], pathway.id = pathid,
-             species = keggcode.organism, out.suffix = "gage_pathway")
+             species = organism.scientific.name, out.suffix = "gage_pathway")
 }
