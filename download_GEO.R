@@ -90,6 +90,9 @@ if (ncol(X) == 2) {
   X <- X[rowSums(is.na(X)) != ncol(X), ] # remove rows with missing data
 }
 
+# remove all zeros
+X <- X[rowSums(X != 0) != 0,]
+
 # Replace missing value with calculated KNN value
 tryCatch({
   imputation <- impute.knn(X)
