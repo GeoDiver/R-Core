@@ -1,7 +1,7 @@
 language: r
 warnings_are_errors: false
 install:
-  - Rscript Installations.R
+  - Rscript installations.R
 script: 
   - bash run.sh
 cache: packages
