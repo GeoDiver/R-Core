@@ -35,6 +35,8 @@ biocLite("org.Pf.plasmo.db") # "Malaria" "pfa" "orf"
 biocLite("org.Pt.eg.db") # "Chimp" "ptr" "eg"
 biocLite("org.Rn.eg.db") # "Rat" "rno" "eg"
 biocLite("org.Sc.sgd.db") # "Yeast" "sce" "orf"
+biocLite("org.Ss.eg.db") # "Pig" "ssc" "eg"
+biocLite("org.Xl.eg.db") # "Xenopus" "xla" "eg"
 install.packages("argparser")
 install.packages("Cairo")
 install.packages("dendextend")

@@ -14,7 +14,26 @@ suppressMessages(library("argparser"))
 suppressMessages(library("GEOquery"))
 suppressMessages(library("impute"))
 suppressMessages(library("pathview")) # for the id2eg function
-suppressMessages(library("org.Mm.eg.db"))  # Species database
+# Species database
+library("org.Ag.eg.db") # "Anopheles" "aga" "eg"
+library("org.At.tair.db") # "Arabidopsis" "ath" "tair"
+library("org.Bt.eg.db") # "Bovine" "bta" "eg"
+library("org.Ce.eg.db") # "Worm" "cel" "eg"
+library("org.Cf.eg.db") # "Canine" "cfa" "eg"
+library("org.Dm.eg.db") # "Fly" "dme" "eg"
+library("org.Dr.eg.db") # "Zebrafish" "dre" "eg"
+library("org.EcK12.eg.db") # "E coli strain K12" "eco" "eg"
+library("org.EcSakai.eg.db") # "E coli strain Sakai" "ecs" "eg"
+library("org.Gg.eg.db") # "Chicken" "gga" "eg"
+library("org.Hs.eg.db") # "Human" "hsa" "eg"
+library("org.Mm.eg.db") # "Mouse" "mmu" "eg"
+library("org.Mmu.eg.db") # "Rhesus" "mcc" "eg"
+library("org.Pf.plasmo.db") # "Malaria" "pfa" "orf"
+library("org.Pt.eg.db") # "Chimp" "ptr" "eg"
+library("org.Rn.eg.db") # "Rat" "rno" "eg"
+library("org.Sc.sgd.db") # "Yeast" "sce" "orf"
+library("org.Ss.eg.db") # "Pig" "ssc" "eg"
+library("org.Xl.eg.db") # "Xenopus" "xla" "eg"
 data(korg)
 data(bods)
 
