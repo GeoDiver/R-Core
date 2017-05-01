@@ -84,21 +84,7 @@ if (grepl('^GDS', argv$accession)) {
   featureData    <- eset@featureData@data
 }
 
-# Retrieve scientific name for organism
-organism.scientific.name <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
-organism.common.name <- as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "species"])
-
-if (c('ENTREZ_GENE_ID') %in% names(featureData)) {
-  entrez.gene.id <- featureData[, 'ENTREZ_GENE_ID']
-} else {
-  package <-as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "package"])
-  # Create two column table containing entrez IDs for geodataset
-  entrez.id <- id2eg(ids =  gene.names, category = "SYMBOL", pkg.name = package, 
-                     org = as.character(organism.scientific.name))  
-  entrez.gene.id <- entrez.id[,2]
-}
-
-X           <- exprs(eset) # Get Expression Data
+X      <- exprs(eset) # Get Expression Data
 pData       <- pData(eset)
 rownames(X) <- gene.names
 
@@ -126,6 +112,33 @@ if (scalable(X)) {
   X[which(X <= 0)] <- NaN # not possible to log transform negative numbers
   X <- log2(X)
 }
+
+# TODO - what happens if species isn't in the korg/ bods db..
+organism.scientific.name <-as.character(korg[which(korg[, "scientific.name"] == organism), "kegg.code"])
+organism.common.name <- as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "species"])
+
+#  Convert Gene Symbols to Entrez IDs (For GAGE Script)
+entrez.gene.id <- tryCatch({
+  if (c('ENTREZ_GENE_ID') %in% names(featureData)) {
+    featureData[, 'ENTREZ_GENE_ID']
+  } else {
+    package <-as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "package"])
+    # Create two column table containing entrez IDs for geodataset
+    entrez.id <- id2eg(ids = gene.names, category = "SYMBOL", pkg.name = package,
+                       org = as.character(organism.scientific.name))
+    entrez.id[,2]
+  }
+}, warning = function(warning) {
+  cat("# Warning ID2EG: ", file=stderr())
+  cat(warning$message, file=stderr())
+}, error = function(error) {
+  cat("# ERROR ID2EG: ", file=stderr())
+  cat(error$message, file=stderr())
+  cat("\n", file=stderr())
+  cat("## This may be because ID2EG does not support this organism: ", file=stderr())
+  cat(paste("(", organism.common.name, ", ", organism.scientific.name, ")\n"), file=stderr())
+  return (c('FAILED') )
+})
 
 if (! is.na(argv$outrdata)) {
   save(X, pData, gene.names, organism, organism.common.name, organism.scientific.name, entrez.gene.id, file = argv$outrdata)
