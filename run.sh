@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -ex
-
 #### Define Variables ####
 ACCESSION='GDS5093'
 OUTRDATA='analysis'
