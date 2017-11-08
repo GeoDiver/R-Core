@@ -71,8 +71,9 @@ echo
 ##############################
 #### dgea.R
 ##############################
-echo Rscript dgea.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}" --analyse "${ANALYSIS_LIST}" --factor "${FACTOR}" --popA "${POPULATION_A}" --popB "${POPULATION_B}" --popname1 "${POPULATION_A_NAME}" --popname2 "${POPULATION_B_NAME}" --topgenecount "${TOPGENE_NO}" --foldchange "${FOLD_CHANGE}" --thresholdvalue "${THRESHOLD_VALUE}" --distance "${DISTANCE_METHOD}" --clustering "${CLUSTERING_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --adjmethod "${ADJUSTMENT_METHOD}" --dendrow --dendcol --dev
-Rscript dgea.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}" --analyse "${ANALYSIS_LIST}" --factor "${FACTOR}" --popA "${POPULATION_A}" --popB "${POPULATION_B}" --popname1 "${POPULATION_A_NAME}" --popname2 "${POPULATION_B_NAME}" --topgenecount "${TOPGENE_NO}" --foldchange "${FOLD_CHANGE}" --thresholdvalue "${THRESHOLD_VALUE}" --distance "${DISTANCE_METHOD}" --clustering "${CLUSTERING_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --adjmethod "${ADJUSTMENT_METHOD}" --dendrow --dendcol --dev
+echo Rscript dgea.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}" --analyse "${ANALYSIS_LIST}" --factor "${FACTOR}" --pop_a "${POPULATION_A}" --pop_b "${POPULATION_B}" --topgenecount "${TOPGENE_NO}" --distance "${DISTANCE_METHOD}" --clustering "${CLUSTERING_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --adjmethod "${ADJUSTMENT_METHOD}" --dendrow --dendcol --dev
+Rscript dgea.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}" --analyse "${ANALYSIS_LIST}" --factor "${FACTOR}" --pop_a "${POPULATION_A}" --pop_b "${POPULATION_B}" --topgenecount "${TOPGENE_NO}" --distance "${DISTANCE_METHOD}" --clustering "${CLUSTERING_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --adjmethod "${ADJUSTMENT_METHOD}" --dendrow --dendcol --dev
+
 echo
 echo "## Verifying Output"
 check_if_file_exists ${OUTRDATA}/dgea_data.json
@@ -103,8 +104,8 @@ echo
 ##############################
 #### gage.R
 ##############################
-echo Rscript gage.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}/" --factor "${FACTOR}" --popA "${POPULATION_A}"  --popB "${POPULATION_B}" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "${DISTANCE_METHOD}" --clustering "${DISTANCE_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --dendrow --dendcol --dev
-Rscript gage.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}/" --factor "${FACTOR}" --popA "${POPULATION_A}"  --popB "${POPULATION_B}" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "${DISTANCE_METHOD}" --clustering "${DISTANCE_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --dendrow --dendcol --dev
+echo Rscript gage.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}/" --factor "${FACTOR}" --pop_a "${POPULATION_A}"  --pop_b "${POPULATION_B}" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "${DISTANCE_METHOD}" --clustering "${DISTANCE_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --dendrow --dendcol --dev
+Rscript gage.R --dbrdata "${OUTRDATA}/${ACCESSION}.RData" --rundir "${OUTRDATA}/" --factor "${FACTOR}" --pop_a "${POPULATION_A}"  --pop_b "${POPULATION_B}" --comparisontype "$COMPARISON_TYPE" --genesettype "$GENE_SET_TYPE" --distance "${DISTANCE_METHOD}" --clustering "${DISTANCE_METHOD}" --clusterby "${CLUSTER_BY}" --heatmaprows "${HEATMAP_ROWS}" --dendrow --dendcol --dev
 echo
 echo "## Verifying Output"
 check_if_file_exists ${OUTRDATA}/gage_data.json
