@@ -9,46 +9,13 @@
 #       Load necessary dependancies, if not previously installed            #
 #############################################################################
 
+install.packages("pacman")
 source("http://bioconductor.org/biocLite.R")
-biocLite("GEOquery")
-biocLite("gage")
-biocLite("gageData")
-biocLite("GO.db")
-biocLite("pathview")
-biocLite("limma")
-biocLite("impute")
+
+pacman::p_load("GEOquery", "gage", "gageData", "GO.db", "pathview", "limma", "impute")
 # Species database
-biocLite("org.Ag.eg.db") # "Anopheles" "aga" "eg"
-biocLite("org.At.tair.db") # "Arabidopsis" "ath" "tair"
-biocLite("org.Bt.eg.db") # "Bovine" "bta" "eg"
-biocLite("org.Ce.eg.db") # "Worm" "cel" "eg"
-biocLite("org.Cf.eg.db") # "Canine" "cfa" "eg"
-biocLite("org.Dm.eg.db") # "Fly" "dme" "eg"
-biocLite("org.Dr.eg.db") # "Zebrafish" "dre" "eg"
-biocLite("org.EcK12.eg.db") # "E coli strain K12" "eco" "eg"
-biocLite("org.EcSakai.eg.db") # "E coli strain Sakai" "ecs" "eg"
-biocLite("org.Gg.eg.db") # "Chicken" "gga" "eg"
-biocLite("org.Hs.eg.db") # "Human" "hsa" "eg"
-biocLite("org.Mm.eg.db") # "Mouse" "mmu" "eg"
-biocLite("org.Mmu.eg.db") # "Rhesus" "mcc" "eg"
-biocLite("org.Pf.plasmo.db") # "Malaria" "pfa" "orf"
-biocLite("org.Pt.eg.db") # "Chimp" "ptr" "eg"
-biocLite("org.Rn.eg.db") # "Rat" "rno" "eg"
-biocLite("org.Sc.sgd.db") # "Yeast" "sce" "orf"
-biocLite("org.Ss.eg.db") # "Pig" "ssc" "eg"
-biocLite("org.Xl.eg.db") # "Xenopus" "xla" "eg"
-install.packages("argparser")
-install.packages("Cairo")
-install.packages("dendextend")
-install.packages("DMwR")
-install.packages("ggplot2")
-install.packages("gplots")
-install.packages("jsonlite")
-install.packages("pheatmap")
-install.packages("plyr")
-install.packages("RColorBrewer")
-install.packages("reshape2")
-install.packages("squash")
+pacman::p_load("org.Ag.eg.db", "org.At.tair.db", "org.Bt.eg.db", "org.Ce.eg.db", "org.Cf.eg.db", "org.Dm.eg.db", "org.Dr.eg.db", "org.EcK12.eg.db", "org.EcSakai.eg.db", "org.Gg.eg.db", "org.Hs.eg.db", "org.Mm.eg.db", "org.Mmu.eg.db", "org.Pf.plasmo.db", "org.Pt.eg.db", "org.Rn.eg.db", "org.Sc.sgd.db", "org.Ss.eg.db", "org.Xl.eg.db")
+pacman::p_load("argparser", "Cairo", "dendextend", "DMwR", "ggplot2", "gplots", "jsonlite", "pheatmap", "plyr", "RColorBrewer", "reshape2", "squash")
 
 #############################################################################
 #            For additional information on required packages                #
