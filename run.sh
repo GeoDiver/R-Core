@@ -56,8 +56,9 @@ echo
 ##############################
 #### Overview.R
 ##############################
-echo Rscript overview.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --analyse "$ANALYSIS_LIST" --factor $FACTOR --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME"  --dev
-Rscript overview.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --analyse "$ANALYSIS_LIST" --factor $FACTOR --popA "$POPULATION_A" --popB "$POPULATION_B" --popname1 "$POPULATION_A_NAME" --popname2 "$POPULATION_B_NAME"  --dev
+echo Rscript overview.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --analyse "$ANALYSIS_LIST" --factor $FACTOR --pop_a "$POPULATION_A" --pop_b "$POPULATION_B"  --dev
+Rscript overview.R --dbrdata "$OUTRDATA/$ACCESSION.RData" --rundir "$OUTRDATA" --analyse "$ANALYSIS_LIST" --factor $FACTOR --pop_a "$POPULATION_A" --pop_b "$POPULATION_B"  --dev
+
 echo
 echo "## Verifying Output"
 check_if_file_exists $OUTRDATA/boxplot.png
