@@ -189,6 +189,7 @@ if ("Boxplot" %in% argv$analyse) {
   },
   error = function(e) {
     cat("ERROR: Unable to generate boxplot\n", file = stderr())
+    # TODO e is array which cat cannot write...
     cat(e, file = stderr())
     quit(save = "no", status = 9, runLast = FALSE)
   })
