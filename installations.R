@@ -9,14 +9,14 @@
 #       Load necessary dependancies, if not previously installed            #
 #############################################################################
 
-source('http://bioconductor.org/biocLite.R')
+source("http://bioconductor.org/biocLite.R")
 biocLite("GEOquery")
 biocLite("gage")
 biocLite("gageData")
 biocLite("GO.db")
 biocLite("pathview")
 biocLite("limma")
-biocLite('impute')
+biocLite("impute")
 # Species database
 biocLite("org.Ag.eg.db") # "Anopheles" "aga" "eg"
 biocLite("org.At.tair.db") # "Arabidopsis" "ath" "tair"

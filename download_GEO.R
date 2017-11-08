@@ -42,9 +42,9 @@ data(bods)
 #############################################################################
 
 parser <- arg_parser("Input GEO Dataset")
-parser <- add_argument(parser, "--accession", default = "GSE51808",
+parser <- add_argument(parser, "--accession", default = "GSE65270",
                        help = "Accession Number of the GEO Database")
-parser <- add_argument(parser, "--outrdata", default = "GSE51808.RData",
+parser <- add_argument(parser, "--outrdata", default = "GSE65270.RData",
                        help = "Full path to the output rData file")
 parser <- add_argument(parser, "--geodbDir", default = ".",
                        help = "Full path to the database directory")
@@ -67,8 +67,18 @@ scalable <- function(X) {
 #############################################################################
 #                        GEO Input                                          #
 #############################################################################
-
-gset <- getGEO(argv$accession, GSEMatrix = TRUE, destdir=argv$geodbDir)
+tryCatch({
+  gset <- getGEO(argv$accession, GSEMatrix = TRUE, destdir=argv$geodbDir)
+}, error = function(error) {
+  # Try downloading again from scratch...
+  tryCatch({
+    gset <- getGEO(argv$accession, GSEMatrix = TRUE )
+  }, error=function(e) {
+    cat("ERROR: Unable to generate gset", file=stderr())
+    cat(e, file=stderr())
+    quit(save = "no", status = 2, runLast = FALSE)
+  })
+})
 
 if (grepl('^GDS', argv$accession)) {
   eset           <- GDS2eSet(gset, do.log2 = FALSE)
@@ -77,14 +87,58 @@ if (grepl('^GDS', argv$accession)) {
   gpl            <- getGEO(Meta(gset)$platform, destdir=argv$geodbDir)
   featureData    <- gpl@dataTable@table
 } else if (grepl('^GSE', argv$accession)) {
-  if (length(gset) > 1) idx <- grep(gset@annotation, attr(gse, "names")) else idx <- 1
-  eset           <- gset[[idx]]
-  gene.names     <- as.character(eset@featureData@data[, "Gene Symbol"])
-  organism       <- as.character(eset@featureData@data[, "Species Scientific Name"][1])
-  featureData    <- eset@featureData@data
+  if (length(gset) > 1) idx <- grep(gset@annotation, attr(gset, "names")) else idx <- 1
+  tryCatch({
+    eset           <- gset[[1]]
+  }, error=function(e) {
+    cat("ERROR: Unable to generate Eset File.", file=stderr())
+    cat(e, file=stderr())
+    quit(save = "no", status = 3, runLast = FALSE)
+  })
+  tryCatch({
+    featureData    <- eset@featureData@data
+  }, error=function(e) {
+    cat("ERROR: Unable to extract feature Data.", file=stderr())
+    cat(e, file=stderr())
+    quit(save = "no", status = 4, runLast = FALSE)
+  })
+  # https://www.ncbi.nlm.nih.gov/geo/info/platform.html#headers
+  if ("Gene Symbol" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "Gene Symbol"])
+  } else if ("Symbol" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "Symbol"])
+  } else if ("PLATE_ID" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "PLATE_ID"])
+  } else if ("GB_ACC" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "GB_ACC"])
+  } else if ("gene_assignment" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "gene_assignment"])
+  } else if ("GB_LIST" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "GB_LIST"])
+  } else if ("GI" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "GI"])
+  } else if ("CLONE_ID" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "CLONE_ID"])
+  } else if ("ID" %in% colnames(featureData)) {
+    gene.names   <- as.character(featureData[, "ID"])
+  } else {
+    cat("ERROR: Bad dataset: Unable to find Symbol in the featureData object", file=stderr())
+    quit(save = "no", status = 5, runLast = FALSE)
+  }
+  if ("Species Scientific Name" %in% colnames(featureData)) {
+    organism     <- as.character(featureData[, "Species Scientific Name"][1])
+  } else if ("Species" %in% colnames(featureData)) {
+    organism     <- as.character(featureData[, "Species"][1])
+  } else {
+    organism <- "Homo sapiens"
+    # TODO - replace with the most common species on GSE
+  # } else {
+    # cat("ERROR: Bad dataset: Unable to find Species in the featureData object", file=stderr())
+    # quit(save = "no", status = 6, runLast = FALSE)
+  }
 }
 
-X      <- exprs(eset) # Get Expression Data
+X           <- exprs(eset) # Get Expression Data
 pData       <- pData(eset)
 rownames(X) <- gene.names
 
@@ -104,7 +158,7 @@ tryCatch({
   X          <- imputation$data
 }, error=function(e) {
   cat("ERROR: Bad dataset: Unable to run KNN imputation on the dataset.", file=stderr())
-  quit(save = "no", status = 1, runLast = FALSE)
+  quit(save = "no", status = 7, runLast = FALSE)
 })
 
 # If not log transformed, do the log2 transformed
@@ -121,6 +175,8 @@ organism.common.name <- as.character(bods[which(bods[, "kegg code"] == organism.
 entrez.gene.id <- tryCatch({
   if (c('ENTREZ_GENE_ID') %in% names(featureData)) {
     featureData[, 'ENTREZ_GENE_ID']
+  } else if (c('Entrez_Gene_ID') %in% names(featureData)) {
+    featureData[, 'Entrez_Gene_ID']
   } else {
     package <-as.character(bods[which(bods[, "kegg code"] == organism.scientific.name), "package"])
     # Create two column table containing entrez IDs for geodataset
