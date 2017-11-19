@@ -157,8 +157,7 @@ tryCatch({
   imputation <- impute.knn(X)
   X          <- imputation$data
 }, error=function(e) {
-  cat("ERROR: Bad dataset: Unable to run KNN imputation on the dataset.", file=stderr())
-  quit(save = "no", status = 7, runLast = FALSE)
+  X <- X[rowSums(is.na(X)) != ncol(X), ] # remove rows with missing data
 })
 
 # If not log transformed, do the log2 transformed
